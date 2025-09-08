@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -74,13 +76,37 @@ dependencies {
 
 
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.S01)
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
     coordinates(
         groupId = "io.github.t1mashov",
         artifactId = "online-chat-hde",
-        version = "1.0.0"
+        version = "1.0.1"
     )
+
+    pom {
+        name.set("Online chat SDK")
+        description.set("Android online chat SDK for HDE systems")
+        url.set("https://github.com/t1mashov/online-chat-hde")
+        licenses {
+            license {
+                name.set("Apache-2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+            }
+        }
+        developers {
+            developer {
+                id.set("t1mashov")
+                name.set("Petr Timashov")
+                email.set("edelweiss2229@gmail.com")
+            }
+        }
+        scm {
+            url.set("https://github.com/t1mashov/online-chat-hde")
+            connection.set("scm:git:git://github.com/t1mashov/online-chat-hde.git")
+            developerConnection.set("scm:git:ssh://git@github.com/t1mashov/online-chat-hde.git")
+        }
+    }
 
 }

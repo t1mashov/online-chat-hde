@@ -98,7 +98,7 @@ fun FilePickerBottom(
             val file = currentVideoPath?.let(::File)
             if (success && file != null && file.exists() && file.length() > 0L) {
                 // видео готово
-                onFileLoaded(currentVideoUri!!, ctx.getFileSize(currentPhotoUri!!))
+                onFileLoaded(currentVideoUri!!, ctx.getFileSize(currentVideoUri!!))
             }
         }
     )

@@ -44,7 +44,7 @@ class ChatViewModelFactory(
 
 
 class ChatViewModel(
-    val service: ChatService
+    private val service: ChatService
 ): ViewModel() {
 
     private val _messages = mutableStateListOf<OrientedMessage>()
@@ -404,6 +404,14 @@ class ChatViewModel(
         totalTickets.intValue -= 1
         service.showPrependMessages(totalTickets.intValue)
     }
+
+    fun visitorIsTyping(text: String) {
+        service.visitorIsTyping(text)
+    }
+
+    fun getTicketOptions() = service.ticketOptions
+    fun getUserData() = service.userData
+    fun getServerOptions() = service.serverOptions
 
 }
 

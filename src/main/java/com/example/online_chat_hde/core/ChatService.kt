@@ -34,6 +34,7 @@ class ChatService(
     val serverOptions: ServerOptions,
     val chatOptions: ChatOptions,
     val ticketOptions: TicketOptions = TicketOptions(),
+    private val visitorData: VisitorData? = null,
     private val listener: ChatListener = object : ChatListener {}
 ) {
 
@@ -116,7 +117,16 @@ class ChatService(
 
 
     init {
-        if (chatOptions.saveUserAfterConnection) {
+        println("[init]")
+        if (visitorData != null) {
+            val payload = Payload.Auth(
+                visitorId = visitorData.id,
+                visitorEmail = visitorData.email,
+                visitorName = visitorData.name
+            )
+            prepare(payload)
+        }
+        else if (chatOptions.saveUserAfterConnection) {
             val userData = sharedPrefs.getUser()
             val payload = if (userData != null) {
                 // получаем юзера из shared prefs
@@ -148,6 +158,7 @@ class ChatService(
     }
 
     private fun prepare(payload: Payload) {
+        println("[prepare]")
         val httpClient = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val request: Request = chain.request().newBuilder()
@@ -198,7 +209,7 @@ class ChatService(
 
     fun initConnect() {
         if (socket.connected()) return
-
+        println("[init-connect]")
         // Удаляем все слушатели
         socket.off()
         // Навешиваем новые слушатели
@@ -304,6 +315,7 @@ class ChatService(
 
     private val reconnectMutex = Mutex()
     private suspend fun reconnectWithAuth(data: VisitorData) = reconnectMutex.withLock {
+        println("[reconnectWithAuth]")
         socket.off()
         socket.disconnect()
         socket.close()
@@ -316,16 +328,24 @@ class ChatService(
     }
 
 
-    private val virtualMessages = mutableListOf<Message.Server>()
-    fun addVirtualMessage(message: Message.Server) {
-        virtualMessages.add(message)
+    fun sendVirtualMessage(message: Message.Server) {
+        scope.launch {
+            _newServerMessageFlow.emit(message)
+        }
     }
-
 
     fun showPrependMessages(ticket: Int) {
         socket.emit(
             SocketEvents.LOAD_TICKET,
             ticket
+        )
+    }
+
+
+    fun visitorIsTyping(text: String) {
+        socket.emit(
+            SocketEvents.VISITOR_IS_TYPING,
+            text
         )
     }
 
@@ -337,12 +357,14 @@ class ChatService(
             ActionTypes.INIT_WIDGET -> {
                 val initWidget = WInit.fromJson(json)
 
+                val disabledTicket = ticketOptions.consentLink==null && !ticketOptions.showEmailField && !ticketOptions.showNameField
+
                 scope.launch {
                     _ticketDataFlow.emit(
                         TicketOptionsWithStatus(
                             options = ticketOptions,
                             status = if (initWidget.data.ticketForm) TicketStatus.STAFF_OFFLINE
-                                     else if (sharedPrefs.getStartChatMessage() != null) TicketStatus.DISABLED
+                                     else if (sharedPrefs.getStartChatMessage() != null || disabledTicket) TicketStatus.DISABLED
                                      else if (initWidget.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
                                      else TicketStatus.DISABLED
                         )
@@ -351,20 +373,24 @@ class ChatService(
 
                 when (val data = initWidget.data) {
                     is InitWidgetData.First -> {
+                        val visitor = VisitorData(
+                            id = data.visitorData.id,
+                            name = data.visitorData.name,
+                            email = data.visitorData.email,
+                        )
+                        ChatSdk.onDetectUser?.invoke(visitor)
+
                         // надо сохранять полученного пользователя
                         if (chatOptions.saveUserAfterConnection) {
                             sharedPrefs.saveUser(
-                                VisitorData(
-                                    id = data.visitorData.id,
-                                    name = data.visitorData.name,
-                                    email = data.visitorData.email,
-                                )
+                                visitor
                             )
                         }
 
                         if (userData == null) {
                             reconnectWithAuth(data.visitorData)
                         }
+
 
 
                         data.initialChatButtons?.let {
@@ -380,7 +406,6 @@ class ChatService(
                     }
                     is InitWidgetData.Progress -> {
 
-                        println("[TOTAL_TICKETS] >>> ${data.widgetChat.totalTickets}")
                         // Сохраняем VisitorData
                         if (chatOptions.saveUserAfterConnection) {
                             sharedPrefs.saveUser(data.visitorData)
@@ -403,7 +428,7 @@ class ChatService(
 
                 }
 
-                ChatSdk.onInitMessage(initWidget.data)
+                ChatSdk.onInitMessage?.invoke(initWidget.data)
             }
             ActionTypes.NEW_MESSAGE -> {
                 _globalLoadingFlow.emit(false)
@@ -411,13 +436,13 @@ class ChatService(
 
                 when (val data = newMessage.data) {
                     is Message.User -> {
-                        ChatSdk.onUserMessage(data)
+                        ChatSdk.onUserMessage?.invoke(data)
                         sharedPrefs.saveChatButtons(listOf())
                         _newUserMessageFlow.emit(data)
                         queueService.checkNextQueueMessage(newMessage)
                     }
                     is Message.Server -> {
-                        ChatSdk.onServerMessage(data)
+                        ChatSdk.onServerMessage?.invoke(data)
                         if (data.chatButtons != null && data.chatButtons!!.isNotEmpty()) {
                             sharedPrefs.saveChatButtons(data.chatButtons!!)
                         }
@@ -455,7 +480,7 @@ class ChatService(
             ActionTypes.START_CHAT -> {
                 val startChat = WStartChat.fromJson(json)
                 _globalLoadingFlow.emit(false)
-                ChatSdk.onUserMessage(startChat.data)
+                ChatSdk.onUserMessage?.invoke(startChat.data)
                 sharedPrefs.saveChatButtons(listOf())
                 _newUserMessageFlow.emit(startChat.data)
                 sharedPrefs.setStartChatMessage(null)
@@ -464,13 +489,6 @@ class ChatService(
             ActionTypes.TICKET_CREATED -> {
                 sharedPrefs.setStartChatMessage(null)
             }
-        }
-
-        if (virtualMessages.isNotEmpty()) {
-            virtualMessages.forEach {
-                _newServerMessageFlow.emit(it)
-            }
-            virtualMessages.clear()
         }
     }
 

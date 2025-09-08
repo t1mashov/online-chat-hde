@@ -23,10 +23,11 @@ object ChatSdk {
         context: Context,
         serverOptions: ServerOptions,
         chatOptions: ChatOptions,
+        visitorData: VisitorData? = null,
         ticketOptions: TicketOptions = TicketOptions(),
         uiConfig: ChatUIConfig = ChatUIConfigDefault
     ) {
-        service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions)
+        service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions, visitorData)
         defaultUi = uiConfig
     }
 
@@ -48,22 +49,22 @@ object ChatSdk {
     internal fun requireService(): ChatService =
         requireNotNull(service) { "Call ChatSdk.init(...) first" }
 
-    internal var onClickClose: () -> Unit = {}
-    internal var onClickSend: (String) -> Unit = {}
-    internal var onClickLoadDocument: () -> Unit = {}
+    internal var onClickClose: (() -> Unit)? = null
+    internal var onClickSend: ((String) -> Unit)? = null
+    internal var onClickLoadDocument: (() -> Unit)? = null
     internal var onClickFile: ((FileData.Text) -> Unit)? = null
     internal var onClickImage: ((FileData.Image) -> Unit)? = null
-    internal var onMessageTyping: (String) -> Unit = {}
+    internal var onMessageTyping: ((String) -> Unit)? = null
     internal var onClickChatButton: ((ChatButton) -> Unit)? = null
 
 
     fun setOnClickEvents(
-        onClickClose: () -> Unit = {},
-        onClickSend: (String) -> Unit = {},
-        onClickLoadDocument: () -> Unit = {},
+        onClickClose: (() -> Unit)? = null,
+        onClickSend: ((String) -> Unit)? = null,
+        onClickLoadDocument: (() -> Unit)? = null,
         onClickFile: ((FileData.Text) -> Unit)? = null,
         onClickImage: ((FileData.Image) -> Unit)? = null,
-        onMessageTyping: (String) -> Unit = {},
+        onMessageTyping: ((String) -> Unit)? = null,
         onClickChatButton: ((ChatButton) -> Unit)? = null,
     ) {
         this.onClickClose = onClickClose
@@ -76,10 +77,10 @@ object ChatSdk {
     }
 
 
-    internal var onServerMessage: (Message.Server) -> Unit = {}
-    internal var onUserMessage: (Message.User) -> Unit = {}
-    internal var onInitMessage: (InitWidgetData) -> Unit = {}
-    internal var onDetectUser: (VisitorData) -> Unit = {}
+    internal var onServerMessage: ((Message.Server) -> Unit)? = null
+    internal var onUserMessage: ((Message.User) -> Unit)? = null
+    internal var onInitMessage: ((InitWidgetData) -> Unit)? = null
+    internal var onDetectUser: ((VisitorData) -> Unit)? = null
 
     fun setChatEventListeners(
         onServerMessage: (Message.Server) -> Unit = {},
@@ -99,7 +100,7 @@ object ChatSdk {
         context.startActivity(i)
     }
 
-    fun addVirtualMessage(
+    fun sendVirtualMessage(
         name: String,
         text: String,
         time: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()),
@@ -113,7 +114,7 @@ object ChatSdk {
             this.isVirtual = true
             this.chatButtons = chatButtons
         }
-        service?.addVirtualMessage(message)
+        service?.sendVirtualMessage(message)
     }
 
     fun sendMessage(message: VisitorMessage) {

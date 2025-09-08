@@ -67,7 +67,7 @@ fun ChatWidget(
     if (ChatSdk.onClickFile == null) {
         ChatSdk.onClickFile = {
             val fullLink = if (it.link.contains("://")) it.link
-            else viewModel.service.serverOptions.originUrl + it.link
+            else chatService.serverOptions.originUrl + it.link
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullLink)).apply {
                 addCategory(Intent.CATEGORY_BROWSABLE)
             }
@@ -121,12 +121,12 @@ fun ChatWidget(
                 modifier = Modifier
                     .fillMaxSize(),
                 onClickClose = {
-                    ChatSdk.onClickClose()
+                    ChatSdk.onClickClose?.invoke()
                     onClose()
                 },
-                onClickSend = ChatSdk.onClickSend,
-                onMessageTyping = ChatSdk.onMessageTyping,
-                onClickLoadDocument = ChatSdk.onClickLoadDocument,
+                onClickSend = { ChatSdk.onClickSend?.invoke(it) },
+                onMessageTyping = { ChatSdk.onMessageTyping?.invoke(it) },
+                onClickLoadDocument = { ChatSdk.onClickLoadDocument?.invoke() },
                 onClickImage = { ChatSdk.onClickImage?.invoke(it) },
                 onClickFile = { ChatSdk.onClickFile?.invoke(it) },
                 onClickChatButton = { ChatSdk.onClickChatButton?.invoke(it) }

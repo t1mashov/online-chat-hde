@@ -60,6 +60,10 @@ import com.example.online_chat_hde.core.TicketStatus
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 
 
@@ -86,13 +90,13 @@ fun ChatView(
     }
 
     val ticketStatus = viewModel.showTicket.value.status
-
+    println("[TicketStatus] >>> $ticketStatus")
     when (ticketStatus) {
         TicketStatus.DISABLED -> {
             ChatPage(viewModel, uiConfig, modifier, onClickClose, onClickSend, onClickLoadDocument, onClickFile, onClickImage, onMessageTyping, onClickChatButton)
         }
         else -> {
-            TicketView(viewModel, uiConfig, viewModel.service.ticketOptions, viewModel.service.userData, ticketStatus, onClickClose) {
+            TicketView(viewModel, uiConfig, viewModel.getTicketOptions(), viewModel.getUserData(), ticketStatus, onClickClose) {
                 // Отправка тикета -> начало чата или уведомление
                 when (ticketStatus) {
                     TicketStatus.STAFF_OFFLINE -> {
@@ -237,6 +241,20 @@ fun ChatBottomPanel(
     var messageText by remember { mutableStateOf("") }
     val filePickerExpanded = remember { mutableStateOf(false) }
 
+    val typingEvents = remember { Channel<String>(capacity = Channel.CONFLATED) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        var lastEmission = 0L
+        typingEvents.consumeAsFlow().collect { text ->
+            val now = System.currentTimeMillis()
+            if (now - lastEmission >= 1000) { // не чаще 1 раза в секунду
+                viewModel.visitorIsTyping(text)
+                lastEmission = now
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -281,7 +299,11 @@ fun ChatBottomPanel(
                 }
                 BasicTextField(
                     value = messageText,
-                    onValueChange = {messageText = it},
+                    onValueChange = {
+                        messageText = it
+                        onMessageTyping(it)
+                        scope.launch { typingEvents.send(it) }
+                    },
 
                     textStyle = TextStyle(
                         fontSize = uiConfig.dimensions.messageFontSize,
@@ -501,7 +523,7 @@ fun ChatPage(
                                 is Message.User -> {
                                     UserMessageView(
                                         item,
-                                        viewModel.service.serverOptions.originUrl,
+                                        viewModel.getServerOptions().originUrl,
                                         onFileClick = onClickFile,
                                         onImageClick = onClickImage,
                                         isLoading = item.isLoading,
@@ -513,7 +535,7 @@ fun ChatPage(
                                     val canShowButtons = remember { mutableStateOf(true) }
                                     ServerMessageView(
                                         item,
-                                        viewModel.service.serverOptions.originUrl,
+                                        viewModel.getServerOptions().originUrl,
                                         onFileClick = onClickFile,
                                         onImageClick = onClickImage,
                                         uiConfig = uiConfig,
