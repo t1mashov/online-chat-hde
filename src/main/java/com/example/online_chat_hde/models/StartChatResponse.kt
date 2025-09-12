@@ -3,20 +3,20 @@ package com.example.online_chat_hde.models
 import com.example.online_chat_hde.core.ActionTypes
 import org.json.JSONObject
 
-class WStartChat(
+class StartChatResponse(
     var action: String,
     var data: Message.User,
 ) {
-    fun toWNewMessage(): WNewMessage {
-        return WNewMessage(
+    fun toNewMessageResponse(): NewMessageResponse {
+        return NewMessageResponse(
             action = ActionTypes.NEW_MESSAGE,
             data = data
         )
     }
     companion object {
-        fun fromJson(json: JSONObject): WStartChat {
+        fun fromJson(json: JSONObject): StartChatResponse {
             val data = json.getJSONObject("data")
-            return WStartChat(
+            return StartChatResponse(
                 action = json.getString("action"),
                 data = Message.User.fromJson(data)
             )

@@ -60,19 +60,18 @@ import androidx.compose.ui.unit.dp
 import com.example.online_chat_hde.core.ChatOptions
 import com.example.online_chat_hde.core.ChatService
 import com.example.online_chat_hde.core.ChatViewModel
-import com.example.online_chat_hde.core.Payload
 import com.example.online_chat_hde.core.ServerOptions
 import com.example.online_chat_hde.core.TicketOptions
 import com.example.online_chat_hde.core.TicketStatus
 import com.example.online_chat_hde.models.StartVisitorChatData
-import com.example.online_chat_hde.models.VisitorData
+import com.example.online_chat_hde.models.UserData
 
 @Composable
 fun TicketView(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     options: TicketOptions,
-    visitorData: VisitorData?,
+    userData: UserData?,
     ticketStatus: TicketStatus = TicketStatus.DISABLED,
     onClickClose: () -> Unit = {},
     onSubmit: (StartVisitorChatData) -> Unit = {}
@@ -84,8 +83,8 @@ fun TicketView(
     val emptyContentError = remember { mutableStateOf(false) }
     val unacceptedConsentError = remember { mutableStateOf(false) }
 
-    val nameText = remember { mutableStateOf(visitorData?.name ?: "") }
-    val emailText = remember { mutableStateOf(visitorData?.email ?: "") }
+    val nameText = remember { mutableStateOf(userData?.name ?: "") }
+    val emailText = remember { mutableStateOf(userData?.email ?: "") }
     val contentText = remember { mutableStateOf("") }
 
     val isConsented = remember { mutableStateOf(false) }
@@ -463,7 +462,7 @@ fun TicketPreview() {
             isEmailRequired = true,
             consentLink = "https://google.com"
         ),
-        visitorData = VisitorData(
+        userData = UserData(
             id = "", name = "Oleg99", email = "oleg99v1@gmail.com"
         ),
         ticketStatus = TicketStatus.STAFF_OFFLINE

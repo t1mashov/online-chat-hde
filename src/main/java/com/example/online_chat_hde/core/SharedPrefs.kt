@@ -2,17 +2,16 @@ package com.example.online_chat_hde.core
 
 import android.content.Context
 import com.example.online_chat_hde.models.ChatButton
-import com.example.online_chat_hde.models.Message
 import com.example.online_chat_hde.models.Staff
 import com.example.online_chat_hde.models.StartVisitorChatData
-import com.example.online_chat_hde.models.VisitorData
+import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import org.json.JSONArray
 import org.json.JSONObject
 
 class SharedPrefs(private val context: Context) {
 
-    fun saveUser(data: VisitorData?) {
+    fun saveUser(data: UserData?) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         if (data == null) {
             prefs.edit()
@@ -26,10 +25,10 @@ class SharedPrefs(private val context: Context) {
                 .apply()
         }
     }
-    fun getUser(): VisitorData? {
+    fun getUser(): UserData? {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         val jsonString = prefs.getString(StorageKeys.VISITOR_DATA, null)
-        return if (jsonString != null) VisitorData.fromJson(JSONObject(jsonString))
+        return if (jsonString != null) UserData.fromJson(JSONObject(jsonString))
                else null
     }
 

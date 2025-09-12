@@ -47,15 +47,17 @@ fun ImageFullScreen(
     baseURL: String,
     uiConfig: ChatUIConfig
 ) {
-    println("[IMAGE] >>> ${image.toJson()}")
+    println("[ImageFullScreen] >>> ${image.name}")
     val ctx = LocalContext.current
-    val url = if (image.preview.contains("://")) image.link else baseURL + image.link
-    println("[URL] >>> $url")
+
+    val url = remember(image.link, baseURL) {
+        if ((image.preview ?: image.thumb).contains("://")) image.link else baseURL + image.link
+    }
 
     val painter = rememberAsyncImagePainter(
         ImageRequest.Builder(ctx)
             .data(url)
-            .crossfade(true)
+            .crossfade(false)
             .size(Size.ORIGINAL)
             .precision(Precision.EXACT)
             .memoryCachePolicy(CachePolicy.ENABLED)

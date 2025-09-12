@@ -46,8 +46,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     val room = "2.6.1"
 
-    implementation(libs.socket.io.client)
+    implementation("io.socket:socket.io-client:2.0.1")
     implementation(libs.androidx.constraintlayout.compose)
+    implementation("androidx.lifecycle:lifecycle-process:2.9.3")
     implementation("androidx.navigation:navigation-compose:2.9.3")
     implementation("io.coil-kt.coil3:coil-compose:3.0.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0")
@@ -55,7 +56,6 @@ dependencies {
     implementation("androidx.room:room-runtime:$room")
     implementation("androidx.room:room-ktx:$room")
     kapt("androidx.room:room-compiler:$room")
-    implementation("androidx.fragment:fragment-ktx:1.8.9")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

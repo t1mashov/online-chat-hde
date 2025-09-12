@@ -264,13 +264,13 @@ private fun FilePickerMenuItem(
         Image(
             ImageVector.vectorResource(icon),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(uiConfig.colors.userMessageBackground),
+            colorFilter = ColorFilter.tint(uiConfig.colors.buttonBackground),
             modifier = Modifier.size(uiConfig.dimensions.bottomSheetIconSize)
         )
         Text(
             text = text,
             fontSize = uiConfig.dimensions.timeFontSize,
-            color = uiConfig.colors.userMessageBackground
+            color = uiConfig.colors.buttonBackground
         )
     }
 }

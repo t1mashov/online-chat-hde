@@ -1,7 +1,7 @@
 package com.example.online_chat_hde.core
 
 import android.content.Context
-import com.example.online_chat_hde.models.WNewMessage
+import com.example.online_chat_hde.models.NewMessageResponse
 
 internal class MessagesQueueService(
     private val service: ChatService,
@@ -12,7 +12,7 @@ internal class MessagesQueueService(
 
     private var isQueueActive = false
 
-    fun checkNextQueueMessage(message: WNewMessage) {
+    fun checkNextQueueMessage(message: NewMessageResponse) {
         sharedPrefs.removeMessageByText(message.data.text)
         sendFirstMessageFromQueue()
     }

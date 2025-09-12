@@ -7,15 +7,16 @@ import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
-import com.example.online_chat_hde.models.VisitorData
+import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
 import com.example.online_chat_hde.ui.ChatUIConfigDefault
+import kotlinx.coroutines.flow.SharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-object ChatSdk {
+object ChatHDE {
     @Volatile private var service: ChatService? = null
     @Volatile internal var defaultUi: ChatUIConfig = ChatUIConfigDefault
 
@@ -23,70 +24,68 @@ object ChatSdk {
         context: Context,
         serverOptions: ServerOptions,
         chatOptions: ChatOptions,
-        visitorData: VisitorData? = null,
+        userData: UserData? = null,
         ticketOptions: TicketOptions = TicketOptions(),
         uiConfig: ChatUIConfig = ChatUIConfigDefault
     ) {
-        service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions, visitorData)
+        service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions, userData)
         defaultUi = uiConfig
     }
 
 
-    fun setUser(id: String, name: String = "", email: String = "") {
-        service?.setUser(VisitorData(
-            id = id,
-            name = name,
-            email = email
-        ))
-    }
-
-
-    fun clearUser() {
-        service?.sharedPrefs?.saveUser(null)
-    }
-
-
-    internal fun requireService(): ChatService =
+    fun requireService(): ChatService =
         requireNotNull(service) { "Call ChatSdk.init(...) first" }
 
-    internal var onClickClose: (() -> Unit)? = null
-    internal var onClickSend: ((String) -> Unit)? = null
-    internal var onClickLoadDocument: (() -> Unit)? = null
-    internal var onClickFile: ((FileData.Text) -> Unit)? = null
-    internal var onClickImage: ((FileData.Image) -> Unit)? = null
+    /** Поток событий сервиса */
+    val events: SharedFlow<ChatEvent>
+        get() = requireService().events
+
     internal var onMessageTyping: ((String) -> Unit)? = null
-    internal var onClickChatButton: ((ChatButton) -> Unit)? = null
+    internal var onClickClose: (() -> Unit)? = null
+
+    internal var clickSendAction: ((String) -> Unit)? = null
+    internal var clickLoadDocumentAction: (() -> Unit)? = null
+    internal var clickFileAction: ((FileData.Text) -> Unit)? = null
+    internal var clickImageAction: ((FileData.Image) -> Unit)? = null
+    internal var clickChatButtonAction: ((ChatButton) -> Unit)? = null
+
+    var clickSendActionDefault: (String) -> Unit = {}
+        internal set
+    var clickLoadDocumentActionDefault: () -> Unit = {}
+        internal set
+    var clickFileActionDefault: (FileData.Text) -> Unit = {}
+        internal set
+    var clickImageActionDefault: (FileData.Image) -> Unit = {}
+        internal set
+    var clickChatButtonActionDefault: (ChatButton) -> Unit = {}
+        internal set
 
 
-    fun setOnClickEvents(
-        onClickClose: (() -> Unit)? = null,
-        onClickSend: ((String) -> Unit)? = null,
-        onClickLoadDocument: (() -> Unit)? = null,
-        onClickFile: ((FileData.Text) -> Unit)? = null,
-        onClickImage: ((FileData.Image) -> Unit)? = null,
-        onMessageTyping: ((String) -> Unit)? = null,
-        onClickChatButton: ((ChatButton) -> Unit)? = null,
+    fun setClickActions(
+        clickSendAction: ((String) -> Unit)? = null,
+        clickLoadDocumentAction: (() -> Unit)? = null,
+        clickFileAction: ((FileData.Text) -> Unit)? = null,
+        clickImageAction: ((FileData.Image) -> Unit)? = null,
+        clickChatButtonAction: ((ChatButton) -> Unit)? = null,
     ) {
-        this.onClickClose = onClickClose
-        this.onClickSend = onClickSend
-        this.onClickLoadDocument = onClickLoadDocument
-        this.onClickFile = onClickFile
-        this.onClickImage = onClickImage
-        this.onMessageTyping = onMessageTyping
-        this.onClickChatButton = onClickChatButton
+        this.clickSendAction = clickSendAction
+        this.clickLoadDocumentAction = clickLoadDocumentAction
+        this.clickFileAction = clickFileAction
+        this.clickImageAction = clickImageAction
+        this.clickChatButtonAction = clickChatButtonAction
     }
 
 
     internal var onServerMessage: ((Message.Server) -> Unit)? = null
     internal var onUserMessage: ((Message.User) -> Unit)? = null
     internal var onInitMessage: ((InitWidgetData) -> Unit)? = null
-    internal var onDetectUser: ((VisitorData) -> Unit)? = null
+    internal var onDetectUser: ((UserData) -> Unit)? = null
 
     fun setChatEventListeners(
         onServerMessage: (Message.Server) -> Unit = {},
         onUserMessage: (Message.User) -> Unit = {},
         onInitMessage: (InitWidgetData) -> Unit = {},
-        onDetectUser: (VisitorData) -> Unit = {}
+        onDetectUser: (UserData) -> Unit = {}
     ) {
         this.onServerMessage = onServerMessage
         this.onUserMessage = onUserMessage
@@ -120,5 +119,22 @@ object ChatSdk {
     fun sendMessage(message: VisitorMessage) {
         service?.sendMessage(message)
     }
+
+
+
+
+
+    fun setUser(user: UserData?) {
+        service?.setUser(user)
+    }
+
+    fun connect() {
+        service?.initConnect()
+    }
+
+    fun disconnect() {
+        service?.disconnect()
+    }
+
 
 }

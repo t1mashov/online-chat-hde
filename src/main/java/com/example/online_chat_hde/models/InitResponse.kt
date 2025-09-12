@@ -7,12 +7,12 @@ import org.json.JSONObject
 
 
 
-class WInit(
+class InitResponse(
     var action: String,
     var data: InitWidgetData,
 ) {
     companion object {
-        fun fromJson(json: JSONObject): WInit = WInit(
+        fun fromJson(json: JSONObject): InitResponse = InitResponse(
             action = json.getString("action"),
             data = InitWidgetData.fromJson(json.getJSONObject("data"))
         )
@@ -39,13 +39,13 @@ sealed class InitWidgetData {
     }
 
     class Progress(
-        var visitorData: VisitorData,
+        var visitorData: UserData,
         var widgetChat: WidgetChat
     ): InitWidgetData() {
         companion object {
             fun fromJson(json: JSONObject): Progress {
                 return Progress(
-                    visitorData = VisitorData.fromJson(json.getJSONObject("visitorData")),
+                    visitorData = UserData.fromJson(json.getJSONObject("visitorData")),
                     widgetChat = WidgetChat.fromJson(json.getJSONObject("widgetChat"))
                 ).apply {
                     val rateJson = json.opt("rate")
@@ -62,7 +62,7 @@ sealed class InitWidgetData {
     }
 
     class First(
-        var visitorData: VisitorData,
+        var userData: UserData,
         var widgetChat: Boolean,
     ): InitWidgetData() {
         companion object {
@@ -70,7 +70,7 @@ sealed class InitWidgetData {
                 val buttons = if (json.get("initialChatButtons") == JSONObject.NULL) null
                               else ChatButton.fromJsonArray(json.getJSONArray("initialChatButtons"))
                 return First(
-                    visitorData = VisitorData.fromJson(json.getJSONObject("visitorData")),
+                    userData = UserData.fromJson(json.getJSONObject("visitorData")),
                     widgetChat = false
                 ).apply {
                     val rateJson = json.opt("rate")
@@ -86,19 +86,19 @@ sealed class InitWidgetData {
 }
 
 
-class VisitorData(
+class UserData(
     var id: String,
-    var name: String,
-    var email: String,
+    var name: String = "",
+    var email: String = "",
 ) {
     fun toJsonString(): String = """{"id":"$id", "name":"$name", "email":"$email"}"""
     companion object {
-        fun fromJson(json: JSONObject): VisitorData = VisitorData(
+        fun fromJson(json: JSONObject): UserData = UserData(
             id = json.getString("id"),
             name = json.getString("name"),
             email = json.getString("email")
         )
-        fun fromPayloadAuthUser(payload: Payload.Auth) = VisitorData(
+        fun fromPayloadAuthUser(payload: Payload.Auth) = UserData(
             id = payload.visitorId,
             name = payload.visitorName,
             email = payload.visitorEmail

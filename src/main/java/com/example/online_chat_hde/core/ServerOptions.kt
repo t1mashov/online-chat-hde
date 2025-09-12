@@ -1,5 +1,6 @@
 package com.example.online_chat_hde.core
 
+import com.example.online_chat_hde.models.UserData
 import org.json.JSONObject
 import java.util.Base64
 
@@ -17,6 +18,7 @@ class ServerOptions(
     var EIO: Int = 4
     var type: String = "web"
     var transport: String = "websocket"
+    var maxReconnectAttempts: Int = 10
 }
 
 
@@ -47,6 +49,15 @@ sealed class Payload {
         override fun encode(): String {
             val json = this.toJson().toString()
             return Base64.getEncoder().encodeToString(json.toByteArray())
+        }
+        companion object {
+            fun fromVisitorData(data: UserData): Payload.Auth {
+                return Auth(
+                    visitorId = data.id,
+                    visitorName = data.name,
+                    visitorEmail = data.email
+                )
+            }
         }
     }
 

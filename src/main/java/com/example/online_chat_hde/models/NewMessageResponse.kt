@@ -5,14 +5,14 @@ import org.json.JSONObject
 import java.util.UUID
 
 // данные нового сообщения клиента ПОЛУЧЕННЫЕ с сервера сразу после отправки
-class WNewMessage(
+class NewMessageResponse(
     var action: String,
     var data: Message,
 ) {
     companion object {
-        fun fromJson(json: JSONObject): WNewMessage {
+        fun fromJson(json: JSONObject): NewMessageResponse {
             val data = json.getJSONObject("data")
-            return WNewMessage(
+            return NewMessageResponse(
                 action = json.getString("action"),
                 data = if (data.getBoolean("visitor")) Message.User.fromJson(data)
                        else Message.Server.fromJson(data)
@@ -144,7 +144,7 @@ sealed class FileData {
 
     class Image(
         var thumb: String,
-        var preview: String,
+        var preview: String?,
     ): FileData() {
         fun toJson(): JSONObject {
             return JSONObject().apply {
@@ -158,7 +158,8 @@ sealed class FileData {
         companion object {
             fun fromJson(json: JSONObject): Image = Image(
                 thumb = json.getString("thumb"),
-                preview = json.getString("preview")
+                preview = if (json.has("preview")) json.getString("preview")
+                          else null
             ).apply {
                 name = json.getString("name")
                 link = json.getString("link")

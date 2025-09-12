@@ -1,8 +1,6 @@
 package com.example.online_chat_hde.ui
 
 import android.annotation.SuppressLint
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,9 +58,7 @@ import com.example.online_chat_hde.core.TicketStatus
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 
@@ -72,7 +68,7 @@ val LocalTimeSize = staticCompositionLocalOf<Int> {
 }
 
 @Composable
-fun ChatView(
+fun ChatMain(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     modifier: Modifier = Modifier,
@@ -85,9 +81,9 @@ fun ChatView(
     onClickChatButton: (ChatButton) -> Unit = {},
 ) {
 
-    LaunchedEffect(Unit) {
-        viewModel.connect()
-    }
+//    LaunchedEffect(Unit) {
+//        viewModel.connect()
+//    }
 
     val ticketStatus = viewModel.showTicket.value.status
     println("[TicketStatus] >>> $ticketStatus")
@@ -101,7 +97,7 @@ fun ChatView(
                 when (ticketStatus) {
                     TicketStatus.STAFF_OFFLINE -> {
                         // Кидаем сообщение в новой переписке на сервер и рисуем пустой экран с текстом
-                        viewModel.clickStartChat(it)
+                        viewModel.startChat(it)
                         viewModel.showTicket.value = TicketOptionsWithStatus(
                             viewModel.showTicket.value.options,
                             TicketStatus.WAIT_FOR_REPLY
@@ -113,7 +109,7 @@ fun ChatView(
                             viewModel.showTicket.value.options,
                             TicketStatus.DISABLED
                         )
-                        viewModel.clickStartChat(it)
+                        viewModel.startChat(it)
                     }
                     else -> {}
                 }
@@ -212,7 +208,7 @@ fun ChatTopPanel(
                         )
                     ) {
                         onClickClose()
-                        viewModel.clickCloseChat()
+                        viewModel.closeChat()
                     }
                     .padding(uiConfig.dimensions.topPanelPadding)
             ) {
@@ -274,7 +270,7 @@ fun ChatBottomPanel(
                 )
         ) {
 
-            if (viewModel.isInternetAvailable.value) {
+            if (viewModel.isConnected.value) {
                 // Разрешен ввод текста
                 // Прикрепить файл
                 Box(
@@ -344,9 +340,8 @@ fun ChatBottomPanel(
                                     color = uiConfig.colors.userMessageBackground,
                                 )
                             ) {
-                                viewModel.clickSendMessage(messageText.trim())
-                                messageText = ""
                                 onClickSend(messageText.trim())
+                                messageText = ""
                             }
                             .padding(uiConfig.dimensions.bottomPanelPadding)
                     ) {
@@ -489,7 +484,7 @@ fun ChatPage(
                 }
 
                 // Предыдущие сообщения
-                if (viewModel.totalTickets.intValue > 1 && viewModel.isInternetAvailable.value) {
+                if (viewModel.totalTickets.intValue > 1 && viewModel.isConnected.value) {
                     PrependMessagesView(viewModel, uiConfig)
                 }
 
@@ -541,7 +536,7 @@ fun ChatPage(
                                         uiConfig = uiConfig,
                                         onChatButtonClick = { btn ->
                                             onClickChatButton?.let { it(btn) }
-                                            if (message.isVirtual && btn.type.equals(ButtonTypes.TEXT)) {
+                                            if (message.isVirtual && btn.type == ButtonTypes.TEXT) {
                                                 viewModel.deleteMessage(message.uuid)
                                             }
                                             if (btn.hideButtons) {
@@ -581,7 +576,8 @@ fun ErrorTopView(
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .background(uiConfig.colors.errorPrimary)
             .padding(uiConfig.dimensions.topPanelPadding)
     ) {
@@ -603,7 +599,8 @@ fun PrependMessagesView(
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = rememberRipple(
@@ -643,9 +640,9 @@ fun ChatPagePreview() {
     )
     val vm = ChatViewModel(service)
     vm.isGlobalLoading.value = false
-    vm.isInternetAvailable.value = true
+    vm.isConnected.value = true
 
-    ChatView(
+    ChatMain(
         viewModel = vm,
         uiConfig = ChatUIConfigDefault
     )

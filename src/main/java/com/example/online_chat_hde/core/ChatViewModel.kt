@@ -6,7 +6,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphIntrinsics
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
@@ -44,7 +46,7 @@ class ChatViewModelFactory(
 
 
 class ChatViewModel(
-    private val service: ChatService
+    val service: ChatService
 ): ViewModel() {
 
     private val _messages = mutableStateListOf<OrientedMessage>()
@@ -54,8 +56,6 @@ class ChatViewModel(
     val loadingMessages: SnapshotStateList<OrientedMessage> = _loadingMessages
 
     val isGlobalLoading = mutableStateOf(true)
-
-    val isInternetAvailable = mutableStateOf(false)
 
     val staff = mutableStateOf<Staff?>(null)
 
@@ -71,6 +71,8 @@ class ChatViewModel(
 
     private val _scrollToBottom = MutableSharedFlow<Unit>()
     val scrollToBottom = _scrollToBottom.asSharedFlow()
+
+    val isConnected = mutableStateOf(false)
 
     private fun triggerScroll() {
         viewModelScope.launch {
@@ -155,13 +157,6 @@ class ChatViewModel(
 
     init {
 
-        // подключение к интернету
-        viewModelScope.launch {
-            service.internetAvailable.collect { success ->
-                isInternetAvailable.value = success
-            }
-        }
-
         // обработка назначения сотрудника
         viewModelScope.launch {
             service.setStaffFlow.collect { setStaff ->
@@ -193,6 +188,7 @@ class ChatViewModel(
                     val isHorizontal = checkHorizontalMode(ormes)
                     ormes.placeHorizontal.value = isHorizontal
                     _loadingMessages.add(ormes)
+                    triggerScroll()
                 }
 
                 _messages.removeIf { it.message.isVirtual }
@@ -245,7 +241,6 @@ class ChatViewModel(
                 ormes.placeHorizontal.value = isHorizontal
                 if (message.isPrepend) {
                     viewModelScope.launch {
-                        println("[SAVE EMIT CLIENT]")
                         _saveScroll.emit(Unit)
                         _messages.add(0, ormes)
                     }
@@ -309,6 +304,18 @@ class ChatViewModel(
                 showTopError(it)
             }
         }
+
+
+        // Отслеживание состояния подключения
+        viewModelScope.launch {
+            service.connection.collect { conn ->
+                println("[connection] >>> $conn")
+                isConnected.value = when (conn) {
+                    is ConnectionState.Connected -> true
+                    else -> false
+                }
+            }
+        }
     }
 
     private fun splitMessage(message: Message): List<Message> {
@@ -359,32 +366,27 @@ class ChatViewModel(
     }
 
 
-
-    fun clickStartChat(data: StartVisitorChatData) {
+    fun startChat(data: StartVisitorChatData) {
         service.sendStartChatMessage(data)
     }
 
 
-    fun clickSendMessage(text: String) {
+    fun sendMessage(text: String) {
         service.sendMessage(message = VisitorMessage(
             text = text,
             files = listOf()
         ))
     }
 
-    private val isConnected = mutableStateOf(false)
     fun connect() {
         if (!isConnected.value) {
             service.initConnect()
-            service.startNetworkMonitoring()
-            isConnected.value = true
             isGlobalLoading.value = true
         }
     }
 
-    fun clickCloseChat() {
-        service.disconnectForce()
-        isConnected.value = false
+    fun closeChat() {
+        service.disconnect()
     }
 
 
@@ -426,9 +428,9 @@ data class OrientedMessage(
 
 
 
-class TextSizer(
-    val density: Density,
-    val resolver: FontFamily.Resolver
+internal class TextSizer(
+    private val density: Density,
+    private val resolver: FontFamily.Resolver
 ) {
 
     fun measureMessageLine(
@@ -438,10 +440,10 @@ class TextSizer(
         val intr = ParagraphIntrinsics(
             text = text,
             style = style,
-            spanStyles = emptyList(),
-            placeholders = emptyList(),
+            annotations = emptyList<AnnotatedString.Range<SpanStyle>>(),
             density = density,
-            fontFamilyResolver = resolver
+            fontFamilyResolver = resolver,
+            placeholders = emptyList()
         )
         return intr.maxIntrinsicWidth.toInt()
     }
