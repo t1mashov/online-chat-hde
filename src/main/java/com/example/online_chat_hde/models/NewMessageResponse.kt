@@ -6,14 +6,12 @@ import java.util.UUID
 
 // данные нового сообщения клиента ПОЛУЧЕННЫЕ с сервера сразу после отправки
 class NewMessageResponse(
-    var action: String,
     var data: Message,
 ) {
     companion object {
         fun fromJson(json: JSONObject): NewMessageResponse {
             val data = json.getJSONObject("data")
             return NewMessageResponse(
-                action = json.getString("action"),
                 data = if (data.getBoolean("visitor")) Message.User.fromJson(data)
                        else Message.Server.fromJson(data)
             )

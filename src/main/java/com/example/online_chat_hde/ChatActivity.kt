@@ -59,7 +59,7 @@ class ChatActivity : ComponentActivity() {
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    ChatView(viewModel) {
+                    ChatView {
                         finish()
                     }
                 }

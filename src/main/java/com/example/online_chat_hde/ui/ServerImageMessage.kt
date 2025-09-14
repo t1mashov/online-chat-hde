@@ -47,9 +47,10 @@ fun ServerImageMessageView(
             .padding(vertical = uiConfig.dimensions.messageIndent)
     ) {
 
+        val imageLink = image.preview ?: image.thumb
         val painter = rememberAsyncImagePainter(
             ImageRequest.Builder(LocalContext.current)
-                .data( if ((image.preview ?: image.thumb).contains("://")) image.preview else baseURL + image.preview)
+                .data( if (imageLink.contains("://")) imageLink else baseURL + imageLink)
                 .crossfade(true)
                 .build()
         )

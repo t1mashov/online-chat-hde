@@ -8,8 +8,13 @@ data class StartVisitorChatData(
     val message: String,
     val policy: Boolean
 ) {
-    fun toJsonString(): String {
-        return """{"name":"$name", "email":"$email", "message":"$message", "policy":$policy}"""
+    fun toJson(): JSONObject {
+        return JSONObject().apply {
+            put("name", name)
+            put("email", email)
+            put("message", message)
+            put("policy", policy)
+        }
     }
     companion object {
         fun fromJson(json: JSONObject): StartVisitorChatData {

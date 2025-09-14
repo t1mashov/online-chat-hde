@@ -1,5 +1,6 @@
 package com.example.online_chat_hde.core
 
+/** Состояние соединения */
 sealed class ConnectionState {
     /** Еще ни разу не был вызван connect() */
     data object NeverConnected : ConnectionState()

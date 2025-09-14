@@ -26,6 +26,6 @@ class ChatEngine(
         chatService.disconnect()
     }
 
-    val incoming: Flow<ChatEvent> get() = chatService.events
-    val connection: StateFlow<ConnectionState> get() = chatService.connection
+    val incoming: Flow<ConnectionEvent> get() = chatService.connectionEvents
+    val connection: StateFlow<ConnectionState> get() = chatService.connectionState
 }

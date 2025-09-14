@@ -15,13 +15,16 @@ import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
 import com.example.online_chat_hde.models.Staff
 import com.example.online_chat_hde.models.StartVisitorChatData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -59,18 +62,24 @@ class ChatViewModel(
 
     val staff = mutableStateOf<Staff?>(null)
 
-    val showTicket = mutableStateOf(TicketOptionsWithStatus(TicketOptions(), TicketStatus.DISABLED))
+    val ticketStatus = mutableStateOf(TicketOptionsWithStatus(TicketOptions(), TicketStatus.DISABLED))
 
-    val totalTickets = mutableIntStateOf(1)
+    val totalTickets = mutableIntStateOf(0)
+    val loadedTicket = mutableIntStateOf(0)
 
     val errorKey = mutableStateOf<String?>(null)
 
+    val firstVisible = mutableIntStateOf(0)
+    val offset = mutableIntStateOf(0)
 
     private val _saveScroll = MutableSharedFlow<Unit>()
     val saveScroll = _saveScroll.asSharedFlow()
 
-    private val _scrollToBottom = MutableSharedFlow<Unit>()
-    val scrollToBottom = _scrollToBottom.asSharedFlow()
+    private val _restoreScroll = MutableSharedFlow<Unit>(replay = 1)
+    val restoreScroll = _restoreScroll.asSharedFlow()
+
+    private val _scrollToBottom = MutableSharedFlow<Unit>(replay = 1)
+    val scrollToBottom: SharedFlow<Unit> = _scrollToBottom.asSharedFlow()
 
     val isConnected = mutableStateOf(false)
 
@@ -157,49 +166,144 @@ class ChatViewModel(
 
     init {
 
-        // обработка назначения сотрудника
+        // Обработка событий сообщений
         viewModelScope.launch {
-            service.setStaffFlow.collect { setStaff ->
-                staff.value = setStaff.data.staff
-            }
-        }
+            service.messagingEvents.collect { event ->
+                when (event) {
+                    is MessagingEvent.Server -> when (event) {
+                        is MessagingEvent.Server.NewMessage -> {
+                            isGlobalLoading.value = false
+                            handleMessage(event.data.data)
+                        }
 
-        // обработка события есть ли агенты в сети
-        viewModelScope.launch {
-            service.ticketDataFlow.collect { isTicketVisible ->
-                showTicket.value = isTicketVisible
-            }
-        }
+                        is MessagingEvent.Server.PrependMessages -> {
+                            val prependMessage = event.data
+                            if (prependMessage.data != null) {
+                                for (message in prependMessage.data.messages.reversed()) {
+                                    handleMessage(
+                                        message.apply { isPrepend = true }
+                                    )
+                                }
+                            }
+                            isGlobalLoading.value = false
+                        }
 
-        // обработка загружаемых сообщений клиента
-        viewModelScope.launch {
-            service.loadingMessageFlow.collect { message ->
-                if (message.files.isNotEmpty()) {
-                    // дожидаемся загрузки и потом рисуем сразу из server-response
-                    isGlobalLoading.value = true
+                        is MessagingEvent.Server.StartChat -> {
+                            isGlobalLoading.value = false
+                            ticketStatus.value = TicketOptionsWithStatus(options = getTicketOptions(), status = TicketStatus.DISABLED)
+                            _messages.clear()
+                            handleMessage(event.data.data)
+                        }
+
+                        is MessagingEvent.Server.TicketCreated -> {
+                            ticketStatus.value = TicketOptionsWithStatus(
+                                options = getTicketOptions(),
+                                status = TicketStatus.WAIT_FOR_REPLY
+                            )
+                            isGlobalLoading.value = false
+                        }
+
+                        // обработка назначения сотрудника
+                        is MessagingEvent.Server.SetStaff -> {
+                            staff.value = event.data.data.staff
+                        }
+
+                        // Обработка инициирующего сообщения
+                        is MessagingEvent.Server.InitWidget -> {
+                            // обработка события показывать ли экран тикета
+                            val ticketOptions = getTicketOptions()
+                            val disabledTicket = ticketOptions.consentLink==null && !ticketOptions.showEmailField && !ticketOptions.showNameField
+                            val status = TicketOptionsWithStatus(
+                                options = ticketOptions,
+                                status = if (event.data.data.ticketForm) TicketStatus.STAFF_OFFLINE
+                                         else if (service.getStartChatMessage() != null || disabledTicket) TicketStatus.DISABLED
+                                         else if (event.data.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
+                                         else TicketStatus.DISABLED
+                            )
+                            ticketStatus.value = status
+
+                            when (val initWidgetData = event.data.data) {
+                                is InitWidgetData.First -> {
+                                    initWidgetData.initialChatButtons?.let {
+                                        handleInitMessages(listOf(Message.Server(name = service.chatOptions.botName).apply {
+                                            chatButtons = it
+                                            isVirtual = true
+                                            text = service.chatOptions.welcomeMessage
+                                        }))
+                                    }
+                                    totalTickets.intValue = 1
+                                    isGlobalLoading.value = false
+                                }
+                                is InitWidgetData.Progress -> {
+                                    totalTickets.intValue = initWidgetData.widgetChat.totalTickets
+                                    // Добавляем кнопки к последнему сообщению если есть
+                                    val savedButtons = service.getChatButtons()
+                                    if (savedButtons.isNotEmpty()) {
+                                        initWidgetData.widgetChat.messages.lastOrNull()?.let {
+                                            it.chatButtons = savedButtons
+                                        }
+                                    }
+                                    handleInitMessages(initWidgetData.widgetChat.messages)
+                                }
+                            }
+
+                        }
+                    }
+
+                    is MessagingEvent.User -> when (event) {
+                        // обработка загружаемых сообщений клиента
+                        is MessagingEvent.User.LoadingMessage -> {
+                            val message = event.data
+                            if (message.files.isNotEmpty()) {
+                                // дожидаемся загрузки и потом рисуем сразу из server-response
+                                isGlobalLoading.value = true
+                            }
+                            else {
+                                // добавляем сообшение с загрузкой
+                                val ormes = OrientedMessage(
+                                    Converter.visitorMessageToUserMessage(message),
+                                    isLoading = true
+                                )
+                                detectTextSize(ormes)
+                                val isHorizontal = checkHorizontalMode(ormes)
+                                ormes.placeHorizontal.value = isHorizontal
+                                _loadingMessages.add(ormes)
+                            }
+
+                            _messages.removeIf { it.message.isVirtual }
+
+                            triggerScroll()
+                        }
+
+                        else -> {}
+                    }
                 }
-                else {
-                    // добавляем сообшение с загрузкой
-                    val ormes = OrientedMessage(
-                        Converter.visitorMessageToUserMessage(message),
-                        isLoading = true
-                    )
-                    detectTextSize(ormes)
-                    val isHorizontal = checkHorizontalMode(ormes)
-                    ormes.placeHorizontal.value = isHorizontal
-                    _loadingMessages.add(ormes)
-                    triggerScroll()
-                }
-
-                _messages.removeIf { it.message.isVirtual }
-
             }
         }
 
-        // пришедшие сообщения АГЕНТОВ
-        viewModelScope.launch {
-            service.newServerMessageFlow.collect { message ->
 
+        // Отслеживаем ошибки загрузки файла
+        viewModelScope.launch {
+            service.errorEvents.collect {
+                isGlobalLoading.value = false
+                showTopError(it)
+            }
+        }
+
+
+        // Отслеживание состояния подключения
+        viewModelScope.launch {
+            service.connectionState.collect { conn ->
+                isConnected.value = conn is ConnectionState.Connected
+            }
+        }
+    }
+
+
+    private fun handleMessage(message: Message) {
+        when (message) {
+            // пришедшие сообщения АГЕНТОВ
+            is Message.Server -> {
                 // Если сообщение содержит и текст и файлы, надо раздробить его на кусочки (для корректного определения размера)
                 val messagesList = splitMessage(message)
 
@@ -213,8 +317,8 @@ class ChatViewModel(
                     val isHorizontal = checkHorizontalMode(ormes)
                     ormes.placeHorizontal.value = isHorizontal
                     if (message.isPrepend) {
+                        saveScroll()
                         viewModelScope.launch {
-                            _saveScroll.emit(Unit)
                             _messages.add(0, ormes)
                         }
                     }
@@ -223,14 +327,10 @@ class ChatViewModel(
                         triggerScroll()
                     }
                 }
-
             }
-        }
 
-        // пришедшие сообщения КЛИЕНТА
-        viewModelScope.launch {
-            service.newUserMessageFlow.collect { message ->
-
+            // подтвержденные сообщения ПОЛЬЗОВАТЕЛЯ
+            is Message.User -> {
                 if (_loadingMessages.isNotEmpty() && _loadingMessages[0].message.text == message.text) {
                     _loadingMessages.removeAt(0)
                 }
@@ -240,8 +340,8 @@ class ChatViewModel(
                 val isHorizontal = checkHorizontalMode(ormes)
                 ormes.placeHorizontal.value = isHorizontal
                 if (message.isPrepend) {
+                    saveScroll()
                     viewModelScope.launch {
-                        _saveScroll.emit(Unit)
                         _messages.add(0, ormes)
                     }
                 }
@@ -249,74 +349,36 @@ class ChatViewModel(
                     _messages.add(ormes)
                     triggerScroll()
                 }
-
-            }
-        }
-
-
-        // Обработка параметра totalTickets
-        viewModelScope.launch {
-            service.totalTickets.collect {
-                totalTickets.intValue = it
-            }
-        }
-
-
-        // Обработка INIT сообщения
-        viewModelScope.launch {
-            service.initMessageFlow.collect { response ->
-
-                // Если сообщение содержит и текст и файлы, надо раздробить его на кусочки
-                // Надо пройтись по всем сообщениям и раздробить при необходимости
-                val messagesList = mutableListOf<Message>()
-                for (message in response) {
-                    messagesList.addAll(splitMessage(message))
-                }
-
-                // т.к. это init сообщение, надо очистить переписку и заполнить заново
-                _messages.clear()
-                _messages.addAll(
-                    messagesList.map {
-                        val ormes = OrientedMessage(it)
-                        detectTextSize(ormes)
-                        val isHorizontal = checkHorizontalMode(ormes)
-                        ormes.placeHorizontal.value = isHorizontal
-                        return@map ormes
-                    }
-                )
-
-                triggerScroll()
-                isGlobalLoading.value = false
-            }
-        }
-
-        // отслеживаем конец загрузки чата
-        viewModelScope.launch {
-            service.globalLoading.collect { response ->
-                isGlobalLoading.value = response
-            }
-        }
-
-        // Отслеживаем ошибки загрузки файла
-        viewModelScope.launch {
-            service.uploadFileService.errorFlow.collect {
-                isGlobalLoading.value = false
-                showTopError(it)
-            }
-        }
-
-
-        // Отслеживание состояния подключения
-        viewModelScope.launch {
-            service.connection.collect { conn ->
-                println("[connection] >>> $conn")
-                isConnected.value = when (conn) {
-                    is ConnectionState.Connected -> true
-                    else -> false
-                }
             }
         }
     }
+
+
+    private fun handleInitMessages(messages: List<Message>) {
+        // Если сообщение содержит и текст и файлы, надо раздробить его на кусочки
+        // Надо пройтись по всем сообщениям и раздробить при необходимости
+        val messagesList = mutableListOf<Message>()
+        for (message in messages) {
+            messagesList.addAll(splitMessage(message))
+        }
+
+        // т.к. это init сообщение, надо очистить переписку и заполнить заново
+        _messages.clear()
+        _messages.addAll(
+            messagesList.map {
+                val ormes = OrientedMessage(it)
+                detectTextSize(ormes)
+                val isHorizontal = checkHorizontalMode(ormes)
+                ormes.placeHorizontal.value = isHorizontal
+                return@map ormes
+            }
+        )
+
+        println("=[count] >>> ${_messages.size}")
+        triggerScroll()
+        isGlobalLoading.value = false
+    }
+
 
     private fun splitMessage(message: Message): List<Message> {
         val messagesList = mutableListOf<Message>()
@@ -403,8 +465,8 @@ class ChatViewModel(
 
     fun showPrependMessages() {
         isGlobalLoading.value = true
-        totalTickets.intValue -= 1
-        service.showPrependMessages(totalTickets.intValue)
+        loadedTicket.intValue += 1
+        service.showPrependMessages(loadedTicket.intValue)
     }
 
     fun visitorIsTyping(text: String) {
@@ -414,6 +476,13 @@ class ChatViewModel(
     fun getTicketOptions() = service.ticketOptions
     fun getUserData() = service.userData
     fun getServerOptions() = service.serverOptions
+
+    fun saveScroll() {
+        viewModelScope.launch { _saveScroll.emit(Unit) }
+    }
+    fun restoreScroll() {
+        viewModelScope.launch { _restoreScroll.emit(Unit) }
+    }
 
 }
 

@@ -2,6 +2,7 @@ package com.example.online_chat_hde.core
 
 import android.content.Context
 import android.content.Intent
+import androidx.lifecycle.ViewModelProvider
 import com.example.online_chat_hde.ChatActivity
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
@@ -24,21 +25,33 @@ object ChatHDE {
         context: Context,
         serverOptions: ServerOptions,
         chatOptions: ChatOptions,
-        userData: UserData? = null,
         ticketOptions: TicketOptions = TicketOptions(),
         uiConfig: ChatUIConfig = ChatUIConfigDefault
     ) {
-        service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions, userData)
-        defaultUi = uiConfig
+        if (service == null) {
+            service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions)
+            defaultUi = uiConfig
+        }
     }
 
 
     fun requireService(): ChatService =
         requireNotNull(service) { "Call ChatSdk.init(...) first" }
 
-    /** Поток событий сервиса */
-    val events: SharedFlow<ChatEvent>
-        get() = requireService().events
+    fun chatViewModelFactory(): ViewModelProvider.Factory = ChatViewModelFactory(requireService())
+
+    /** события сервиса */
+    val connectionEvents: SharedFlow<ConnectionEvent>
+        get() = requireService().connectionEvents
+
+    /** События сокета */
+    val messagingEvents: SharedFlow<MessagingEvent>
+        get() = requireService().messagingEvents
+
+    /** Состояние соединения */
+    val connectionState: SharedFlow<ConnectionState>
+        get() = requireService().connectionState
+
 
     internal var onMessageTyping: ((String) -> Unit)? = null
     internal var onClickClose: (() -> Unit)? = null
@@ -73,24 +86,6 @@ object ChatHDE {
         this.clickFileAction = clickFileAction
         this.clickImageAction = clickImageAction
         this.clickChatButtonAction = clickChatButtonAction
-    }
-
-
-    internal var onServerMessage: ((Message.Server) -> Unit)? = null
-    internal var onUserMessage: ((Message.User) -> Unit)? = null
-    internal var onInitMessage: ((InitWidgetData) -> Unit)? = null
-    internal var onDetectUser: ((UserData) -> Unit)? = null
-
-    fun setChatEventListeners(
-        onServerMessage: (Message.Server) -> Unit = {},
-        onUserMessage: (Message.User) -> Unit = {},
-        onInitMessage: (InitWidgetData) -> Unit = {},
-        onDetectUser: (UserData) -> Unit = {}
-    ) {
-        this.onServerMessage = onServerMessage
-        this.onUserMessage = onUserMessage
-        this.onInitMessage = onInitMessage
-        this.onDetectUser = onDetectUser
     }
 
 

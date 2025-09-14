@@ -41,7 +41,7 @@ class SharedPrefs(private val context: Context) {
                 .apply()
         }
         else {
-            val dataTxt = data.toJsonString()
+            val dataTxt = data.toJson().toString()
             prefs.edit()
                 .putString(StorageKeys.START_CHAT_DATA, dataTxt)
                 .apply()

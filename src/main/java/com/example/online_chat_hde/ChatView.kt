@@ -9,6 +9,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,12 +24,12 @@ import org.json.JSONObject
 
 @Composable
 fun ChatView(
-    viewModel: ChatViewModel,
     onClose: () -> Unit
 ) {
     val ctx = LocalContext.current
 
-    val chatService = viewModel.service
+    val vm: ChatViewModel = viewModel(factory = ChatHDE.chatViewModelFactory())
+    val chatService = vm.service
 
     val nav = rememberNavController()
 
@@ -75,7 +76,7 @@ fun ChatView(
 
     // Стандартный обработчик отправки сообщений
     ChatHDE.clickSendActionDefault = {
-        viewModel.sendMessage(it)
+        vm.sendMessage(it)
     }
 
 
@@ -100,7 +101,7 @@ fun ChatView(
     }
 
     BackHandler {
-        viewModel.closeChat()
+        vm.closeChat()
         onClose()
     }
 
@@ -110,7 +111,7 @@ fun ChatView(
     ) {
         composable(ChatRoutes.CHAT) {
             ChatMain(
-                viewModel = viewModel,
+                viewModel = vm,
                 uiConfig = ChatHDE.defaultUi,
                 modifier = Modifier
                     .fillMaxSize(),
@@ -121,7 +122,7 @@ fun ChatView(
                 onClickSend = { (ChatHDE.clickSendAction ?: ChatHDE.clickSendActionDefault).invoke(it) },
                 onMessageTyping = { ChatHDE.onMessageTyping?.invoke(it) },
                 onClickLoadDocument = { (ChatHDE.clickLoadDocumentAction ?: ChatHDE.clickLoadDocumentActionDefault).invoke() },
-                onClickImage = { (ChatHDE.clickImageAction ?: ChatHDE.clickImageActionDefault).invoke(it) },
+                onClickImage = { vm.saveScroll(); (ChatHDE.clickImageAction ?: ChatHDE.clickImageActionDefault).invoke(it) },
                 onClickFile = { (ChatHDE.clickFileAction ?: ChatHDE.clickFileActionDefault).invoke(it) },
                 onClickChatButton = { (ChatHDE.clickChatButtonAction ?: ChatHDE.clickChatButtonActionDefault).invoke(it) }
             )
@@ -135,6 +136,11 @@ fun ChatView(
             }
 
             val image = remember(json) { FileData.Image.fromJson(JSONObject(json)) }
+
+            BackHandler {
+                vm.restoreScroll()
+                nav.popBackStack()
+            }
 
             ImageFullScreen(
                 image = image,

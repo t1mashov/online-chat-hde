@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.ripple.rememberRipple
@@ -28,8 +29,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +62,7 @@ import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 
@@ -81,11 +85,7 @@ fun ChatMain(
     onClickChatButton: (ChatButton) -> Unit = {},
 ) {
 
-//    LaunchedEffect(Unit) {
-//        viewModel.connect()
-//    }
-
-    val ticketStatus = viewModel.showTicket.value.status
+    val ticketStatus = viewModel.ticketStatus.value.status
     println("[TicketStatus] >>> $ticketStatus")
     when (ticketStatus) {
         TicketStatus.DISABLED -> {
@@ -94,25 +94,27 @@ fun ChatMain(
         else -> {
             TicketView(viewModel, uiConfig, viewModel.getTicketOptions(), viewModel.getUserData(), ticketStatus, onClickClose) {
                 // Отправка тикета -> начало чата или уведомление
-                when (ticketStatus) {
-                    TicketStatus.STAFF_OFFLINE -> {
-                        // Кидаем сообщение в новой переписке на сервер и рисуем пустой экран с текстом
-                        viewModel.startChat(it)
-                        viewModel.showTicket.value = TicketOptionsWithStatus(
-                            viewModel.showTicket.value.options,
-                            TicketStatus.WAIT_FOR_REPLY
-                        )
-                    }
-                    TicketStatus.FIRST_MESSAGE -> {
-                        // Кидаем сообщение и открываем чат
-                        viewModel.showTicket.value = TicketOptionsWithStatus(
-                            viewModel.showTicket.value.options,
-                            TicketStatus.DISABLED
-                        )
-                        viewModel.startChat(it)
-                    }
-                    else -> {}
-                }
+                viewModel.isGlobalLoading.value = true
+                viewModel.startChat(it)
+//                when (ticketStatus) {
+//                    TicketStatus.STAFF_OFFLINE -> {
+//                        // Кидаем сообщение в новой переписке на сервер и рисуем пустой экран с текстом
+//                        viewModel.startChat(it)
+////                        viewModel.ticketStatus.value = TicketOptionsWithStatus(
+////                            viewModel.ticketStatus.value.options,
+////                            TicketStatus.WAIT_FOR_REPLY
+////                        )
+//                    }
+//                    TicketStatus.FIRST_MESSAGE -> {
+//                        // Кидаем сообщение и открываем чат
+////                        viewModel.ticketStatus.value = TicketOptionsWithStatus(
+////                            viewModel.ticketStatus.value.options,
+////                            TicketStatus.DISABLED
+////                        )
+//                        viewModel.startChat(it)
+//                    }
+//                    else -> {}
+//                }
 
             }
         }
@@ -397,7 +399,7 @@ fun ChatPage(
     onMessageTyping: (String) -> Unit,
     onClickChatButton: ((ChatButton) -> Unit)?,
 ) {
-
+    println("[ChatPage compose]")
     val messages = viewModel.messages + viewModel.loadingMessages
 
     val focusManager = LocalFocusManager.current
@@ -410,8 +412,8 @@ fun ChatPage(
     val resolver = LocalFontFamilyResolver.current
 
 
-    val firstVisible = remember { mutableIntStateOf(0) }
-    val offset = remember { mutableIntStateOf(0) }
+    val firstVisible = remember { viewModel.firstVisible  }
+    val offset = remember { viewModel.offset }
 
     LaunchedEffect(Unit) {
         viewModel.saveScroll.collect {
@@ -428,12 +430,17 @@ fun ChatPage(
         prevCount = messages.size
     }
 
-    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(Unit) {
         viewModel.scrollToBottom.collect {
-            coroutineScope.launch {
-                lazyListState.scrollToItem(0)
-            }
+            lazyListState.scrollToItem(0)
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.restoreScroll.collect {
+            lazyListState.scrollToItem(firstVisible.intValue, offset.intValue)
+            firstVisible.intValue = 0
+            offset.intValue = 0
         }
     }
 
@@ -484,7 +491,7 @@ fun ChatPage(
                 }
 
                 // Предыдущие сообщения
-                if (viewModel.totalTickets.intValue > 1 && viewModel.isConnected.value) {
+                if (viewModel.loadedTicket.intValue < viewModel.totalTickets.intValue && viewModel.isConnected.value) {
                     PrependMessagesView(viewModel, uiConfig)
                 }
 

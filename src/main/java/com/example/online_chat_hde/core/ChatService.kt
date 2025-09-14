@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import org.json.JSONObject
 
 
@@ -35,69 +34,48 @@ class ChatService(
     context: Context,
     val serverOptions: ServerOptions,
     val chatOptions: ChatOptions,
-    val ticketOptions: TicketOptions = TicketOptions(),
-    @Volatile var userData: UserData? = null
+    val ticketOptions: TicketOptions = TicketOptions()
 ) {
 
-    private val _connection = MutableStateFlow<ConnectionState>(ConnectionState.NeverConnected)
-    val connection: StateFlow<ConnectionState> = _connection.asStateFlow()
+    @Volatile var userData: UserData? = null
+
+    // Состояние соединения
+    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.NeverConnected)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    // События соединения
+    private val _connectionEvents = MutableSharedFlow<ConnectionEvent>()
+    val connectionEvents: SharedFlow<ConnectionEvent> = _connectionEvents
+
+    // События сокета
+    private val _messagingEvents = MutableSharedFlow<MessagingEvent>()
+    val messagingEvents: SharedFlow<MessagingEvent> = _messagingEvents
 
     private val appContext = context.applicationContext
 
-    val sharedPrefs = SharedPrefs(appContext)
-    private val queueService = MessagesQueueService(this, appContext)
+    private val sharedPrefs = SharedPrefs(appContext)
+    private val messageQueueService = MessagesQueueService(this, sharedPrefs)
+    private val startChatQueueService = StartChatQueueService(this, sharedPrefs)
     internal val uploadFileService = UploadFileService(this, appContext)
     private val reconnectManager = ReconnectManager(this)
 
+    // Ошибки при загрузке файла
+    val errorEvents: SharedFlow<String>
+        get() = uploadFileService.errorFlow
 
-    // События сокета + ответы сервера
-    private val _events = MutableSharedFlow<ChatEvent>()
-    val events: SharedFlow<ChatEvent> = _events
 
     @Volatile private var socket: Socket? = null
 
-    // сообщения, отправленные клиентом (загружаются)
-    private val _loadingMessageFlow = MutableSharedFlow<VisitorMessage>()
-    internal val loadingMessageFlow: SharedFlow<VisitorMessage> = _loadingMessageFlow
-
-    // сообщения пользователя (от сервера)
-    private val _newUserMessageFlow = MutableSharedFlow<Message.User>()
-    internal val newUserMessageFlow: SharedFlow<Message.User> = _newUserMessageFlow
-
-    // сообщения сотрудников (от сервера)
-    private val _newServerMessageFlow = MutableSharedFlow<Message.Server>()
-    internal val newServerMessageFlow: SharedFlow<Message.Server> = _newServerMessageFlow
-
-    // первое сообщение от сервера после подключения
-    private val _initMessageFlow = MutableSharedFlow<List<Message>>()
-    internal val initMessageFlow: SharedFlow<List<Message>> = _initMessageFlow
-
-    // передача параметра totalTickets
-    private val _totalTickets = MutableSharedFlow<Int>()
-    internal val totalTickets: SharedFlow<Int> = _totalTickets
-
-    // триггер загрузки контента
-    private val _globalLoadingFlow = MutableSharedFlow<Boolean>()
-    internal val globalLoading: SharedFlow<Boolean> = _globalLoadingFlow
-
-    private val _setStaffFlow = MutableSharedFlow<SetStaffResponse>()
-    internal val setStaffFlow: SharedFlow<SetStaffResponse> = _setStaffFlow
-
-    private val _ticketDataFlow = MutableSharedFlow<TicketOptionsWithStatus>()
-    internal val ticketDataFlow: SharedFlow<TicketOptionsWithStatus> = _ticketDataFlow
 
     // Поток состояний попыток переподключения
     private val _reconnectFlow = MutableSharedFlow<ReconnectState>()
     internal val reconnectFlow: SharedFlow<ReconnectState> = _reconnectFlow
 
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val mutex = Mutex()
 
     // Флаг показывает, намеренно ли мы сбросили соединение (если true то это мы)
     @Volatile internal var manualDisconnect = false
-
 
 
     fun isConnected() = socket?.connected() == true
@@ -116,10 +94,11 @@ class ChatService(
             // писать ошибку что нет соединения
             println("[networkCallback onLost]")
             scope.launch {
-                _connection.emit(ConnectionState.Disconnected)
+                _connectionState.emit(ConnectionState.Disconnected)
             }
             defuseSocket()
-            queueService.disableQueue()
+            messageQueueService.disableQueue()
+            startChatQueueService.freeQueue()
         }
     }
 
@@ -199,7 +178,7 @@ class ChatService(
             val loadingMessages = sharedPrefs.getMessagesQueue()
             scope.launch {
                 for (item in loadingMessages) {
-                    _loadingMessageFlow.emit(item)
+                    _messagingEvents.emit(MessagingEvent.User.LoadingMessage(item))
                 }
             }
         }
@@ -209,7 +188,7 @@ class ChatService(
         if (chatOptions.saveUserAfterConnection) {
             sharedPrefs.getStaff()?.let {
                 scope.launch {
-                    _setStaffFlow.emit(SetStaffResponse.fromStaff(it))
+                    _messagingEvents.emit(MessagingEvent.Server.SetStaff(SetStaffResponse.fromStaff(it)))
                 }
             }
         }
@@ -225,7 +204,7 @@ class ChatService(
             println("[connect]")
             manualDisconnect = false
             socket?.connect()
-            _connection.value = ConnectionState.Connecting
+            _connectionState.value = ConnectionState.Connecting
         }
     }
 
@@ -241,12 +220,14 @@ class ChatService(
             it.off()
             it.on(Socket.EVENT_CONNECT) {
                 println("#[EVENT_CONNECT]")
-                _connection.value = ConnectionState.Connected
-                queueService.startSendMessageQueue()
-                scope.launch { _events.emit(ChatEvent.Connected) }
+                _connectionState.value = ConnectionState.Connected
+                messageQueueService.startSendMessageQueue()
+                startChatQueueService.startSend()
+                scope.launch { _connectionEvents.emit(ConnectionEvent.Connected) }
                 reconnectManager.resetAttempts()
             }
             it.on(SocketEvents.SERVER_RESPONSE) {args ->
+                println("[server-response] >>> ${args.contentToString()}")
                 scope.launch {
                     val json = when (args.size) {
                         2 -> args[1] as JSONObject
@@ -258,22 +239,24 @@ class ChatService(
             }
             it.on(Socket.EVENT_DISCONNECT) { args ->
                 println("#[EVENT_DISCONNECT] >>> ${args.contentToString()}")
-                queueService.disableQueue()
-                _connection.value = ConnectionState.Disconnected
+                messageQueueService.disableQueue()
+                startChatQueueService.freeQueue()
+                _connectionState.value = ConnectionState.Disconnected
                 if (!manualDisconnect) {
                     reconnectManager.triggerReconnect()
                 } else {
                     manualDisconnect = false
                 }
-                scope.launch { _events.emit(ChatEvent.Disconnected(args.toList())) }
+                scope.launch { _connectionEvents.emit(ConnectionEvent.Disconnected(args.toList())) }
             }
             it.on(Socket.EVENT_CONNECT_ERROR) {args ->
                 println("#[EVENT_CONNECT_ERROR] >>> ${args.contentToString()}")
                 val err = (args.firstOrNull() as? Throwable)
                     ?: RuntimeException("CONNECT_ERROR: ${args.contentToString()}")
-                _connection.value = ConnectionState.Error(err)
-                scope.launch { _events.emit(ChatEvent.ConnectError(args.toList())) }
-                queueService.disableQueue()
+                _connectionState.value = ConnectionState.Error(err)
+                scope.launch { _connectionEvents.emit(ConnectionEvent.ConnectError(args.toList())) }
+                messageQueueService.disableQueue()
+                startChatQueueService.freeQueue()
                 reconnectManager.triggerReconnect()
             }
         }
@@ -295,8 +278,6 @@ class ChatService(
         restoreSavedLoadingMessages()
         // Запуск мониторинга доступности сети
         startNetworkMonitoring()
-
-        scope.launch { _globalLoadingFlow.emit(true) }
     }
 
 
@@ -305,7 +286,7 @@ class ChatService(
         userData = null
         manualDisconnect = true
         stopNetworkMonitoring()
-        _connection.value = ConnectionState.Disconnected
+        _connectionState.value = ConnectionState.Disconnected
     }
 
 
@@ -315,30 +296,28 @@ class ChatService(
                 SocketEvents.VISITOR_MESSAGE,
                 message.toJson()
             )
-            scope.launch { _events.emit(ChatEvent.UserMessage(UserMessageEvent.Message(message))) }
         }
     }
 
 
     fun sendStartChatMessage(data: StartVisitorChatData) {
+        println("[sendStartChatMessage] >>> ${data.toJson()}")
         sharedPrefs.setStartChatMessage(data)
         val message = VisitorMessage(text = data.message, files = listOf())
         scope.launch {
-            _loadingMessageFlow.emit(message)
-            if (message.files.isNotEmpty()) {
-                _globalLoadingFlow.emit(true)
-            }
+            _messagingEvents.emit(MessagingEvent.User.LoadingMessage(message))
         }
-        queueService.startSendMessageQueue()
+        startChatQueueService.startSend()
     }
 
     fun sendStartChatMessageToServer(data: StartVisitorChatData) {
         if (isConnected()) {
+            println("[visitor-message] >>> ['${SocketEvents.START_VISITOR_CHAT}', ${data.toJson()}]")
             socket?.emit(
                 SocketEvents.START_VISITOR_CHAT,
-                JSONObject(data.toJsonString())
+                data.toJson()
             )
-            scope.launch { _events.emit(ChatEvent.UserMessage(UserMessageEvent.StartVisitorChat(data))) }
+            scope.launch { _messagingEvents.emit(MessagingEvent.User.StartVisitorChat(data)) }
         }
     }
 
@@ -347,9 +326,9 @@ class ChatService(
             sharedPrefs.addMessageToQueue(message)
         }
         scope.launch {
-            _loadingMessageFlow.emit(message)
+            _messagingEvents.emit(MessagingEvent.User.LoadingMessage(message))
         }
-        queueService.startSendMessageQueue()
+        messageQueueService.startSendMessageQueue()
     }
 
 
@@ -365,16 +344,17 @@ class ChatService(
 
     fun sendVirtualMessage(message: Message.Server) {
         scope.launch {
-            _newServerMessageFlow.emit(message)
+            _messagingEvents.emit(MessagingEvent.Server.NewMessage(NewMessageResponse(data = message.apply { isVirtual = true })))
         }
     }
 
     fun showPrependMessages(ticket: Int) {
+        println("[load-ticket, $ticket]")
         socket?.emit(
             SocketEvents.LOAD_TICKET,
             ticket
         )
-        scope.launch { _events.emit(ChatEvent.UserMessage(UserMessageEvent.LoadTicket(ticket))) }
+        scope.launch { _messagingEvents.emit(MessagingEvent.User.LoadTicket(ticket)) }
     }
 
     fun visitorIsTyping(text: String) {
@@ -382,35 +362,23 @@ class ChatService(
             SocketEvents.VISITOR_IS_TYPING,
             text
         )
-        scope.launch { _events.emit(ChatEvent.UserMessage(UserMessageEvent.VisitorIsTyping(text))) }
+        scope.launch { _messagingEvents.emit(MessagingEvent.User.VisitorIsTyping(text)) }
     }
 
 
+    internal fun getStartChatMessage() = sharedPrefs.getStartChatMessage()
+    internal fun getChatButtons() = sharedPrefs.getChatButtons()
+
+
     private suspend fun onServerResponse(json: JSONObject) {
-        println("[server-message] >>> $json")
         val action = json.get("action").toString()
         when (action) {
             ActionTypes.INIT_WIDGET -> {
                 val initWidget = InitResponse.fromJson(json)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.InitWidget(initWidget)))
-
-                val disabledTicket = ticketOptions.consentLink==null && !ticketOptions.showEmailField && !ticketOptions.showNameField
-
-                scope.launch {
-                    _ticketDataFlow.emit(
-                        TicketOptionsWithStatus(
-                            options = ticketOptions,
-                            status = if (initWidget.data.ticketForm) TicketStatus.STAFF_OFFLINE
-                                     else if (sharedPrefs.getStartChatMessage() != null || disabledTicket) TicketStatus.DISABLED
-                                     else if (initWidget.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
-                                     else TicketStatus.DISABLED
-                        )
-                    )
-                }
+                _messagingEvents.emit(MessagingEvent.Server.InitWidget(initWidget))
 
                 when (val data = initWidget.data) {
                     is InitWidgetData.First -> {
-                        ChatHDE.onDetectUser?.invoke(data.userData)
                         userData = data.userData
 
                         // надо сохранять полученного пользователя
@@ -419,108 +387,58 @@ class ChatService(
                                 data.userData
                             )
                         }
-
-                        data.initialChatButtons?.let {
-                            _initMessageFlow.emit(
-                                listOf(Message.Server(name = chatOptions.botName).apply {
-                                    chatButtons = it
-                                    isVirtual = true
-                                    text = chatOptions.welcomeMessage
-                                })
-                            )
-                        }
-                        _totalTickets.emit(1)
-                        _globalLoadingFlow.emit(false)
                     }
                     is InitWidgetData.Progress -> {
-
                         // Сохраняем VisitorData
                         if (chatOptions.saveUserAfterConnection) {
                             sharedPrefs.saveUser(data.visitorData)
                         }
                         userData = data.visitorData
-
-                        // Отправляем кол-во тикетов в VM
-                        _totalTickets.emit(data.widgetChat.totalTickets)
-
-                        // Добавляем кнопки к последнему сообщению если есть
-                        val savedButtons = sharedPrefs.getChatButtons()
-                        if (savedButtons.isNotEmpty()) {
-                            data.widgetChat.messages.lastOrNull()?.let {
-                                it.chatButtons = savedButtons
-                            }
-                        }
-                        // Отправляем во ViewModel
-                        _initMessageFlow.emit(data.widgetChat.messages)
                     }
 
                 }
 
-                ChatHDE.onInitMessage?.invoke(initWidget.data)
             }
             ActionTypes.NEW_MESSAGE -> {
-                _globalLoadingFlow.emit(false)
                 val newMessage = NewMessageResponse.fromJson(json)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.NewMessage(newMessage)))
+                _messagingEvents.emit(MessagingEvent.Server.NewMessage(newMessage))
 
                 when (val data = newMessage.data) {
                     is Message.User -> {
-                        ChatHDE.onUserMessage?.invoke(data)
                         sharedPrefs.saveChatButtons(listOf())
-                        _newUserMessageFlow.emit(data)
-                        queueService.checkNextQueueMessage(newMessage)
+                        messageQueueService.checkNextQueueMessage(newMessage)
                     }
                     is Message.Server -> {
-                        ChatHDE.onServerMessage?.invoke(data)
                         if (data.chatButtons != null && data.chatButtons!!.isNotEmpty()) {
                             sharedPrefs.saveChatButtons(data.chatButtons!!)
                         }
                         else {
                             sharedPrefs.saveChatButtons(listOf())
                         }
-                        _newServerMessageFlow.emit(data)
                     }
                 }
 
             }
             ActionTypes.PREPEND_MESSAGES -> {
                 val prependMessage = PrependMessagesResponse.fromJson(json)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.PrependMessages(prependMessage)))
-                if (prependMessage.data != null) {
-                    for (message in prependMessage.data.messages.reversed()) {
-                        when (message) {
-                            is Message.Server -> {
-                                _newServerMessageFlow.emit(message.apply { isPrepend = true })
-                            }
-                            is Message.User -> {
-                                _newUserMessageFlow.emit(message.apply { isPrepend = true })
-                            }
-                        }
-                    }
-                }
-                _globalLoadingFlow.emit(false)
+                _messagingEvents.emit(MessagingEvent.Server.PrependMessages(prependMessage))
             }
             ActionTypes.SET_STAFF -> {
                 val setStaff = SetStaffResponse.fromJson(json)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.SetStaff(setStaff)))
-                scope.launch {
-                    _setStaffFlow.emit(setStaff)
-                }
+                _messagingEvents.emit(MessagingEvent.Server.SetStaff(setStaff))
                 sharedPrefs.saveStaff(setStaff.data.staff)
             }
             ActionTypes.START_CHAT -> {
                 val startChat = StartChatResponse.fromJson(json)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.StartChat(startChat)))
-                _globalLoadingFlow.emit(false)
-                ChatHDE.onUserMessage?.invoke(startChat.data)
+                _messagingEvents.emit(MessagingEvent.Server.StartChat(startChat))
                 sharedPrefs.saveChatButtons(listOf())
-                _newUserMessageFlow.emit(startChat.data)
                 sharedPrefs.setStartChatMessage(null)
-                queueService.checkNextQueueMessage(startChat.toNewMessageResponse())
+                startChatQueueService.freeQueue()
             }
             ActionTypes.TICKET_CREATED -> {
                 sharedPrefs.setStartChatMessage(null)
-                _events.emit(ChatEvent.ServerResponse(ServerResponseEvent.TicketCreated))
+                startChatQueueService.freeQueue()
+                _messagingEvents.emit(MessagingEvent.Server.TicketCreated)
             }
         }
     }

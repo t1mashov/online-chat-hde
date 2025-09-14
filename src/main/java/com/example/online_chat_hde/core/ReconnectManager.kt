@@ -17,7 +17,7 @@ internal class ReconnectManager(
     private val mutex = Mutex()
     private var reconnectAttempts = 0
 
-    private val connection = service.connection
+    private val connection = service.connectionState
 
     // Вызовет reconnect() если это нужно
     fun triggerReconnect(): ReconnectState {
