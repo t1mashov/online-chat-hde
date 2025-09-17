@@ -19,6 +19,16 @@ class ServerOptions(
     var type: String = "web"
     var transport: String = "websocket"
     var maxReconnectAttempts: Int = 10
+
+    companion object {
+        fun fromDomain(domain: String): ServerOptions {
+            return ServerOptions(
+                socketUrl = "wss://$domain",
+                originUrl = "https://$domain",
+                uploadUrl = "https://$domain/ru/omnichannel/upload"
+            )
+        }
+    }
 }
 
 

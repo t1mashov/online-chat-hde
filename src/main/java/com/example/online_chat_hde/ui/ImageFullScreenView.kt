@@ -47,7 +47,7 @@ fun ImageFullScreen(
     baseURL: String,
     uiConfig: ChatUIConfig
 ) {
-    println("[ImageFullScreen] >>> ${image.name}")
+    println("SDK[ImageFullScreen] >>> ${image.name}")
     val ctx = LocalContext.current
 
     val url = remember(image.link, baseURL) {

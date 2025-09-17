@@ -34,6 +34,22 @@ object ChatHDE {
         }
     }
 
+    fun setServerOptions(options: ServerOptions) {
+        requireService().serverOptions = options
+    }
+
+    fun setChatOptions(options: ChatOptions) {
+        requireService().chatOptions = options
+    }
+
+    fun setTicketOptions(options: TicketOptions) {
+        requireService().ticketOptions = options
+    }
+
+    fun setUiConfig(config: ChatUIConfig) {
+        defaultUi = config
+    }
+
 
     fun requireService(): ChatService =
         requireNotNull(service) { "Call ChatSdk.init(...) first" }
@@ -54,7 +70,6 @@ object ChatHDE {
 
 
     internal var onMessageTyping: ((String) -> Unit)? = null
-    internal var onClickClose: (() -> Unit)? = null
 
     internal var clickSendAction: ((String) -> Unit)? = null
     internal var clickLoadDocumentAction: (() -> Unit)? = null
@@ -119,8 +134,12 @@ object ChatHDE {
 
 
 
-    fun setUser(user: UserData?) {
+    fun setUser(user: UserData) {
         service?.setUser(user)
+    }
+
+    fun clearUser() {
+        service?.setUser(null)
     }
 
     fun connect() {

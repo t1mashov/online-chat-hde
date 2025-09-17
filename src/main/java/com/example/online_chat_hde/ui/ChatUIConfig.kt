@@ -35,16 +35,26 @@ data class ChatUIColors(
     var topPanelText: Color,
     var closeChatButtonBackground: Color,
     var closeChatButtonIcon: Color,
+
     var userMessageBackground: Color,
     var userMessageText: Color,
     var userRipple: Color,
+    var userTimeText: Color,
+
     var serverMessageBackground: Color,
+    var serverMessageAgent: Color,
     var serverMessageText: Color,
     var serverRipple: Color,
+    var serverTimeText: Color,
+
+    var virtualMessageBackground: Color,
+    var virtualMessageAgent: Color,
+    var virtualMessageText: Color,
+    var virtualRipple: Color,
+    var virtualTimeText: Color,
+
     var topDivider: Color,
     var bottomDivider: Color,
-    var userTimeText: Color,
-    var serverTimeText: Color,
     var timeOnImageText: Color,
     var timeOnImageBackground: Color,
     var userLoadingImageColor: Color,
@@ -82,10 +92,13 @@ data class ChatUIDimensions(
     /** Отступ между сообщениями (по вертикали) */
     var messageIndent: Dp,
 
-    /** размер шрифта в тексте сообщений */
+    /** Размер шрифта в тексте сообщений */
     var messageFontSize: TextUnit,
 
-    /** размер шрифта подписи времени */
+    /** Размер шрифта имени агента */
+    var agentNameFontSize: TextUnit,
+
+    /** Размер шрифта подписи времени */
     var timeFontSize: TextUnit,
 
     /** Отступы между элементами внутри сообщения */
@@ -100,10 +113,13 @@ data class ChatUIDimensions(
     /** Скругления углов у сообщения (изображения) пользователя */
     var userImageMessagesCorners: RoundedCornerShape,
 
+    /** Размер изображения отправленного пользователем */
     var userImageMessageSize: Dp,
+
+    /** Размер изображения отправленного агентом */
     var serverImageMessageSize: Dp,
 
-    /** Скругления углов у сообщения сервера (текстового) */
+    /** Скругления углов у сообщения агента (текстового) */
     var serverTextMessagesCorners: RoundedCornerShape,
     /** Скругления углов у сообщения сервера (файла) */
     var serverFileMessagesCorners: RoundedCornerShape,
@@ -116,24 +132,34 @@ data class ChatUIDimensions(
     /** Минимальный отступ от края экрана до сообщения (слева для сообщений пользователя и справа для ответов сервера) */
     var messageMinEndIndent: Dp,
 
-    var loadingSize: Dp,
+    /** Размер иконки загрузки напротив сообщения */
+    var messageLoadingIconSize: Dp,
 
+    /** Размер иконок элементов управления */
     var logoSize: Dp,
 
+    /** Скругления углов кнопок в сообщении и тикете */
     var buttonCorners: RoundedCornerShape,
 
+    /** Внутренний отступ у кнопок сообщения и тикета */
     var buttonPadding: Dp,
 
+    /** Размер иконок выбора действия при загрузке документа */
     var bottomSheetIconSize: Dp,
 
+    /** Скругления углов у аватара агента */
     var staffIconCorners: RoundedCornerShape,
 
+    /** Отступ у полей для ввода в тикете */
     var ticketFieldsIndent: Dp,
 
+    /** Размер иконки загрузки чата */
     var loadingLogoSize: Dp,
 
-    var ticketSubText: TextUnit,
+    /** Размер вспомогательного текста в тикете */
+    var ticketSubFontSize: TextUnit,
 
+    /**  */
     var ticketFieldsCorners: RoundedCornerShape,
 )
 
@@ -156,7 +182,7 @@ data class ChatUITexts(
     var invalidEmailError: String,
     var unacceptedConsentError: String,
     var waitForReply: String,
-    val uploadError: String,
+    var uploadError: String,
 
     var errors: Map<String, String>,
 
@@ -171,18 +197,28 @@ object ChatUIConfigDefault : ChatUIConfig(
         topPanelText = Color(0xFFFFFFFF),
         closeChatButtonBackground = Color(0xFF13424B),
         closeChatButtonIcon = Color(0xFFDAE3E5),
+
         userMessageBackground = Color(0xFF297D8B),
         userMessageText = Color(0xFFFFFFFF),
         userRipple = Color(0xFFffffff),
+        userTimeText = Color(0xD2FFFFFF),
+
         serverMessageBackground = Color(0xFFE1E7EC),
+        serverMessageAgent = Color(0xFF000000),
         serverMessageText = Color(0xFF343434),
         serverRipple = Color(0xFF000000),
+        serverTimeText = Color(0xD24B4B4B),
+
+        virtualMessageBackground = Color(0xFFC9E8E2),
+        virtualMessageAgent = Color(0xFF000000),
+        virtualMessageText = Color(0xFF343434),
+        virtualRipple = Color(0xFF000000),
+        virtualTimeText = Color(0xD24B4B4B),
+
         topDivider = Color(0xFFFFFFFF),
         bottomDivider = Color(0xFFBABABA),
         timeOnImageText = Color(0xCBFFFFFF),
         timeOnImageBackground = Color(0x906C6C6C),
-        userTimeText = Color(0xD2FFFFFF),
-        serverTimeText = Color(0xD24B4B4B),
         userLoadingImageColor = Color(0xFFA8BEC2),
         bottomPanelBackground = Color(0xFFF3F3F3),
         pyperclip = Color(0xFF297D8B),
@@ -201,7 +237,7 @@ object ChatUIConfigDefault : ChatUIConfig(
         statusBarBackground = Color(0xFF19545E),
         navigationBarBackground = Color(0xFF000000),
         showPrependMessagesBackground = Color(0xFFFFFFFF),
-        dateText = Color(0xFF4E4E4E)
+        dateText = Color(0xFF4E4E4E),
     ),
     dimensions = ChatUIDimensions(
         topPanelPadding = 12.dp,
@@ -221,7 +257,7 @@ object ChatUIConfigDefault : ChatUIConfig(
         timeFontSize = 10.sp,
         innerIndent = 10.dp,
         pyperclipSize = 20.dp,
-        loadingSize = 14.dp,
+        messageLoadingIconSize = 14.dp,
         userImageMessageSize = 150.dp,
         serverImageMessageSize = 150.dp,
         logoSize = 25.dp,
@@ -231,8 +267,9 @@ object ChatUIConfigDefault : ChatUIConfig(
         staffIconCorners = RoundedCornerShape(16.dp),
         ticketFieldsIndent = 12.dp,
         loadingLogoSize = 56.dp,
-        ticketSubText = 12.sp,
-        ticketFieldsCorners = RoundedCornerShape(8.dp)
+        ticketSubFontSize = 12.sp,
+        ticketFieldsCorners = RoundedCornerShape(8.dp),
+        agentNameFontSize = 12.sp
     ),
     texts = ChatUITexts(
         unassigned = "Пожалуйста, подождите",
@@ -255,7 +292,7 @@ object ChatUIConfigDefault : ChatUIConfig(
         waitForReply = "Спасибо за Ваше сообщение!\nМы скоро на него ответим!",
         uploadError = "Не удалось загрузить файл, попробуйте загрузить повторно",
         errors = mapOf(
-            ErrorKeys.FILE_MAX_SIZE to "Максимальный размер загружаемого файла не должен превышать 20 Мб"
+            ErrorKeys.FILE_MAX_SIZE to "Превышен максимальный размер загружаемого файла"
         ),
         months = mapOf(
             DateKeys.TODAY to "Сегодня",

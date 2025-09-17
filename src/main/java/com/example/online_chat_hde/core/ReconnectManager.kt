@@ -45,7 +45,7 @@ internal class ReconnectManager(
 
 
     private suspend fun reconnectWithBackoff() = mutex.withLock {
-        println("[reconnect with backoff]")
+        println("SDK[reconnect with backoff]")
         service.userData?.let {
             service.buildSocket(Payload.Auth.fromVisitorData(it))
             service.attachListeners()

@@ -6,17 +6,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 
 
-fun calculateFileMessageWidth(
-    text: String,
-    density: Density,
-    uiConfig: ChatUIConfig
-): Dp {
-    return calculateTextWidth(text, density, uiConfig.dimensions.messageFontSize) +
-            uiConfig.dimensions.innerIndent*4 +
-            uiConfig.dimensions.pyperclipSize
-}
-
-
 
 fun calculateTextMessageWidth(
     text: String,
@@ -29,17 +18,6 @@ fun calculateTextMessageWidth(
             uiConfig.dimensions.messagePadding*2
 }
 
-
-fun calculateTimeMessageWidth(
-    text: String,
-    density: Density,
-    uiConfig: ChatUIConfig
-): Dp {
-    return calculateTextWidth(text, density, uiConfig.dimensions.timeFontSize) +
-            uiConfig.dimensions.innerIndent +
-            uiConfig.dimensions.pyperclipSize +
-            uiConfig.dimensions.messagePadding*2
-}
 
 
 fun calculateTextWidth(

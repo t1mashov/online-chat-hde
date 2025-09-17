@@ -36,6 +36,7 @@ fun ServerTextMessageView(
 ) {
 
     val message = orientedMessage.message as Message.Server
+    val isVirtual = orientedMessage.message.isVirtual
 
     val density = LocalDensity.current
 
@@ -55,7 +56,8 @@ fun ServerTextMessageView(
                         contentAlignment = Alignment.CenterStart,
                         modifier = Modifier
                             .background(
-                                color = uiConfig.colors.serverMessageBackground,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageBackground
+                                        else uiConfig.colors.serverMessageBackground,
                                 shape = uiConfig.dimensions.serverTextMessagesCorners
                             )
                             .padding(uiConfig.dimensions.messagePadding)
@@ -71,7 +73,9 @@ fun ServerTextMessageView(
                                 },
                                 text = message.name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = uiConfig.dimensions.messageFontSize
+                                fontSize = uiConfig.dimensions.agentNameFontSize,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageAgent
+                                        else uiConfig.colors.serverMessageAgent
                             )
 
                             Text(
@@ -80,7 +84,8 @@ fun ServerTextMessageView(
                                     start.linkTo(parent.start)
                                 },
                                 text = message.text,
-                                color = uiConfig.colors.serverMessageText,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageText
+                                        else uiConfig.colors.serverMessageText,
                                 fontSize = uiConfig.dimensions.messageFontSize
                             )
 
@@ -92,7 +97,8 @@ fun ServerTextMessageView(
                                     horizontalBias = 1f
                                 },
                                 text = message.time,
-                                color = uiConfig.colors.serverTimeText,
+                                color = if (isVirtual) uiConfig.colors.virtualTimeText
+                                        else uiConfig.colors.serverTimeText,
                                 fontSize = uiConfig.dimensions.timeFontSize
                             )
 
@@ -128,7 +134,8 @@ fun ServerTextMessageView(
                         contentAlignment = Alignment.CenterStart,
                         modifier = Modifier
                             .background(
-                                color = uiConfig.colors.serverMessageBackground,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageBackground
+                                        else uiConfig.colors.serverMessageBackground,
                                 shape = uiConfig.dimensions.serverTextMessagesCorners
                             )
                             .padding(uiConfig.dimensions.messagePadding)
@@ -137,12 +144,15 @@ fun ServerTextMessageView(
                             Text(
                                 text = message.name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = uiConfig.dimensions.messageFontSize
+                                fontSize = uiConfig.dimensions.agentNameFontSize,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageAgent
+                                        else uiConfig.colors.serverMessageAgent
                             )
                             Spacer(Modifier.height(uiConfig.dimensions.innerIndent))
                             Text(
                                 text = message.text,
-                                color = uiConfig.colors.serverMessageText,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageText
+                                        else uiConfig.colors.serverMessageText,
                                 fontSize = uiConfig.dimensions.messageFontSize
                             )
                             Spacer(Modifier.height(uiConfig.dimensions.innerIndent))
@@ -150,7 +160,8 @@ fun ServerTextMessageView(
                                 Box(modifier = Modifier.weight(1f))
                                 Text(
                                     text = message.time,
-                                    color = uiConfig.colors.serverTimeText,
+                                    color = if (isVirtual) uiConfig.colors.virtualTimeText
+                                            else uiConfig.colors.serverTimeText,
                                     fontSize = uiConfig.dimensions.timeFontSize
                                 )
                             }
@@ -201,6 +212,7 @@ fun TestScreen2() {
                             ChatButton(text = "Call operator"),
                             ChatButton(text = "Stop bot")
                         )
+                        isVirtual = true
                     },
                     placeHorizontal = remember { mutableStateOf(true) }
                 ),

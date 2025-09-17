@@ -21,7 +21,6 @@ import com.example.online_chat_hde.models.Staff
 import com.example.online_chat_hde.models.StartVisitorChatData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -62,7 +61,7 @@ class ChatViewModel(
 
     val staff = mutableStateOf<Staff?>(null)
 
-    val ticketStatus = mutableStateOf(TicketOptionsWithStatus(TicketOptions(), TicketStatus.DISABLED))
+    val ticketStatus = mutableStateOf(TicketOptionsWithStatus(TicketOptions(), TicketStatus.CHAT_ACTIVE))
 
     val totalTickets = mutableIntStateOf(0)
     val loadedTicket = mutableIntStateOf(0)
@@ -190,7 +189,7 @@ class ChatViewModel(
 
                         is MessagingEvent.Server.StartChat -> {
                             isGlobalLoading.value = false
-                            ticketStatus.value = TicketOptionsWithStatus(options = getTicketOptions(), status = TicketStatus.DISABLED)
+                            ticketStatus.value = TicketOptionsWithStatus(options = getTicketOptions(), status = TicketStatus.CHAT_ACTIVE)
                             _messages.clear()
                             handleMessage(event.data.data)
                         }
@@ -216,9 +215,9 @@ class ChatViewModel(
                             val status = TicketOptionsWithStatus(
                                 options = ticketOptions,
                                 status = if (event.data.data.ticketForm) TicketStatus.STAFF_OFFLINE
-                                         else if (service.getStartChatMessage() != null || disabledTicket) TicketStatus.DISABLED
+                                         else if (service.getStartChatMessage() != null || disabledTicket) TicketStatus.CHAT_ACTIVE
                                          else if (event.data.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
-                                         else TicketStatus.DISABLED
+                                         else TicketStatus.CHAT_ACTIVE
                             )
                             ticketStatus.value = status
 
@@ -244,6 +243,11 @@ class ChatViewModel(
                                         }
                                     }
                                     handleInitMessages(initWidgetData.widgetChat.messages)
+
+                                    val newStaff = initWidgetData.widgetChat.staff
+                                    newStaff?.let {
+                                        staff.value = it
+                                    }
                                 }
                             }
 
@@ -261,7 +265,11 @@ class ChatViewModel(
                             else {
                                 // добавляем сообшение с загрузкой
                                 val ormes = OrientedMessage(
-                                    Converter.visitorMessageToUserMessage(message),
+                                    Message.User().apply {
+                                        uuid = message.uuid
+                                        text = message.text
+                                        visitor = true
+                                    },
                                     isLoading = true
                                 )
                                 detectTextSize(ormes)
@@ -374,7 +382,6 @@ class ChatViewModel(
             }
         )
 
-        println("=[count] >>> ${_messages.size}")
         triggerScroll()
         isGlobalLoading.value = false
     }
@@ -491,7 +498,8 @@ data class OrientedMessage(
     val message: Message,
     var textWidth: Int = 0,
     var isLoading: Boolean = false,
-    var placeHorizontal: MutableState<Boolean> = mutableStateOf(false)
+    var placeHorizontal: MutableState<Boolean> = mutableStateOf(false),
+    var showButtons: MutableState<Boolean> = mutableStateOf(true)
 )
 
 

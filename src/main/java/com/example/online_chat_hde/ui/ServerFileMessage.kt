@@ -13,14 +13,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,7 @@ fun ServerFileMessageView(
 
     val interactionSource = remember { MutableInteractionSource() }
 
+    val isVirtual = orientedMessage.message.isVirtual
 
     Box(
         contentAlignment = Alignment.CenterStart,
@@ -62,11 +64,14 @@ fun ServerFileMessageView(
                         contentAlignment = Alignment.CenterStart,
                         modifier = Modifier
                             .clip(uiConfig.dimensions.serverTextMessagesCorners)
-                            .background(color = uiConfig.colors.serverMessageBackground)
+                            .background(
+                                color = if (isVirtual) uiConfig.colors.virtualMessageBackground
+                                        else uiConfig.colors.serverMessageBackground
+                            )
                             .clickable(
                                 interactionSource = interactionSource,
-                                indication = rememberRipple(
-                                    color = uiConfig.colors.serverRipple,
+                                indication = ripple(
+                                    color = uiConfig.colors.serverRipple
                                 )
                             ) {
                                 onFileClick(file)
@@ -80,6 +85,10 @@ fun ServerFileMessageView(
                             Image(
                                 imageVector = ImageVector.vectorResource(R.drawable.piperclip),
                                 contentDescription = null,
+                                colorFilter = ColorFilter.tint(
+                                    if (isVirtual) uiConfig.colors.virtualMessageText
+                                    else uiConfig.colors.serverMessageText
+                                ),
                                 modifier = Modifier
                                     .size(uiConfig.dimensions.pyperclipSize)
                                     .constrainAs(imageRef) {
@@ -98,7 +107,9 @@ fun ServerFileMessageView(
                                 },
                                 text = name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = uiConfig.dimensions.messageFontSize
+                                fontSize = uiConfig.dimensions.agentNameFontSize,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageAgent
+                                        else uiConfig.colors.serverMessageAgent
                             )
 
                             Text(
@@ -107,7 +118,8 @@ fun ServerFileMessageView(
                                     start.linkTo(imageRef.end, margin = uiConfig.dimensions.innerIndent/2)
                                 },
                                 text = file.name,
-                                color = uiConfig.colors.serverMessageText,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageText
+                                        else uiConfig.colors.serverMessageText,
                                 fontSize = uiConfig.dimensions.messageFontSize,
                                 textDecoration = TextDecoration.Underline
                             )
@@ -120,7 +132,8 @@ fun ServerFileMessageView(
                                     horizontalBias = 1f
                                 },
                                 text = time,
-                                color = uiConfig.colors.serverTimeText,
+                                color = if (isVirtual) uiConfig.colors.virtualTimeText
+                                        else uiConfig.colors.serverTimeText,
                                 fontSize = uiConfig.dimensions.timeFontSize
                             )
 
@@ -133,12 +146,14 @@ fun ServerFileMessageView(
                         modifier = Modifier
                             .clip(uiConfig.dimensions.serverTextMessagesCorners)
                             .background(
-                                color = uiConfig.colors.serverMessageBackground,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageBackground
+                                        else uiConfig.colors.serverMessageBackground
                             )
                             .clickable(
                                 interactionSource = interactionSource,
-                                indication = rememberRipple(
-                                    color = uiConfig.colors.serverRipple,
+                                indication = ripple(
+                                    color = if (isVirtual) uiConfig.colors.virtualRipple
+                                            else uiConfig.colors.serverRipple
                                 )
                             ) {
                                 onFileClick(file)
@@ -150,20 +165,27 @@ fun ServerFileMessageView(
                             Text(
                                 text = name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = uiConfig.dimensions.messageFontSize,
+                                fontSize = uiConfig.dimensions.agentNameFontSize,
+                                color = if (isVirtual) uiConfig.colors.virtualMessageAgent
+                                        else uiConfig.colors.serverMessageAgent
                             )
                             Spacer(modifier = Modifier.height(uiConfig.dimensions.innerIndent))
                             Row {
                                 Image(
                                     imageVector = ImageVector.vectorResource(R.drawable.piperclip),
                                     contentDescription = null,
+                                    colorFilter = ColorFilter.tint(
+                                        if (isVirtual) uiConfig.colors.virtualMessageText
+                                        else uiConfig.colors.serverMessageText
+                                    ),
                                     modifier = Modifier
                                         .size(uiConfig.dimensions.pyperclipSize)
                                 )
                                 Spacer(modifier = Modifier.width(uiConfig.dimensions.innerIndent/2))
                                 Text(
                                     text = file.name,
-                                    color = uiConfig.colors.serverMessageText,
+                                    color = if (isVirtual) uiConfig.colors.virtualMessageText
+                                            else uiConfig.colors.serverMessageText,
                                     fontSize = uiConfig.dimensions.messageFontSize,
                                     textDecoration = TextDecoration.Underline
                                 )
@@ -173,7 +195,8 @@ fun ServerFileMessageView(
                                 Spacer(modifier = Modifier.weight(1f))
                                 Text(
                                     text = time,
-                                    color = uiConfig.colors.serverTimeText,
+                                    color = if (isVirtual) uiConfig.colors.virtualTimeText
+                                            else uiConfig.colors.serverTimeText,
                                     fontSize = uiConfig.dimensions.timeFontSize
                                 )
                             }
@@ -200,7 +223,7 @@ fun PreviewServerFileMessage() {
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         ServerFileMessageView(
-            orientedMessage = OrientedMessage(Message.User(), placeHorizontal = mutableStateOf(true)),
+            orientedMessage = OrientedMessage(Message.User(), placeHorizontal = remember { mutableStateOf(true) }) ,
             file = FileData.Text("", false).apply {
                 name = "hello.txt"
             },

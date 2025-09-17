@@ -4,7 +4,6 @@ data class TicketOptions(
     val showNameField: Boolean = false,
     val showEmailField: Boolean = false,
     val isEmailRequired: Boolean = false,
-    val isNameRequired: Boolean = false,
     /** Ссылка на согласине на обработку персональных данных */
     val consentLink: String? = null
 )
@@ -18,5 +17,5 @@ enum class TicketStatus {
     STAFF_OFFLINE,
     FIRST_MESSAGE,
     WAIT_FOR_REPLY,
-    DISABLED
+    CHAT_ACTIVE
 }

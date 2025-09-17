@@ -6,11 +6,6 @@ import org.json.JSONObject
 class StartChatResponse(
     var data: Message.User,
 ) {
-    fun toNewMessageResponse(): NewMessageResponse {
-        return NewMessageResponse(
-            data = data
-        )
-    }
     companion object {
         fun fromJson(json: JSONObject): StartChatResponse {
             val data = json.getJSONObject("data")

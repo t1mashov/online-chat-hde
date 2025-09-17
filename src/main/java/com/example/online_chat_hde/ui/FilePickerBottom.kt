@@ -26,6 +26,7 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -86,7 +87,7 @@ fun FilePickerBottom(
         onResult = { success -> // Фото
             val file = currentPhotoPath?.let(::File)
             if (success && file != null && file.exists() && file.length() > 0) {
-                println("[photo] >>> ${currentPhotoUri}")
+                println("SDK[photo] >>> ${currentPhotoUri}")
                 onFileLoaded(currentPhotoUri!!, ctx.getFileSize(currentPhotoUri!!))
             }
         }
@@ -106,7 +107,7 @@ fun FilePickerBottom(
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri -> // Файл
-            println("[FILE uri] >>> $uri")
+            println("SDK[FILE uri] >>> $uri")
             expanded.value = false
             uri?.let {
                 onFileLoaded(it, ctx.getFileSize(it))
@@ -254,8 +255,8 @@ private fun FilePickerMenuItem(
         modifier = Modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(
-                    color = uiConfig.colors.userRipple,
+                indication = ripple(
+                    color = uiConfig.colors.userRipple
                 ),
                 onClick = onClick
             ),

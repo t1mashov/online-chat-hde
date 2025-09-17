@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -81,9 +82,7 @@ fun UserImageMessageView(
                             .clip(uiConfig.dimensions.userImageMessagesCorners)
                             .clickable(
                                 interactionSource = interactionSource,
-                                indication = rememberRipple(
-                                    color = uiConfig.colors.imageRipple,
-                                )
+                                indication = ripple(color = uiConfig.colors.imageRipple)
                             ) { onImageClick(image) }
                     ) {
                         Image(

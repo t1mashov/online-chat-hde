@@ -121,10 +121,10 @@ class Rate(
 }
 
 class ChatButton(
+    var text: String,
     var type: String = ButtonTypes.TEXT,
     var name: String? = null,
     var value: String? = null,
-    var text: String,
     var hideButtons: Boolean = false,
 ) {
 

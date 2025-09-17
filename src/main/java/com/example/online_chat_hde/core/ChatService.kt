@@ -32,9 +32,9 @@ import org.json.JSONObject
 
 class ChatService(
     context: Context,
-    val serverOptions: ServerOptions,
-    val chatOptions: ChatOptions,
-    val ticketOptions: TicketOptions = TicketOptions()
+    var serverOptions: ServerOptions,
+    var chatOptions: ChatOptions,
+    var ticketOptions: TicketOptions = TicketOptions()
 ) {
 
     @Volatile var userData: UserData? = null
@@ -86,13 +86,13 @@ class ChatService(
     }
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            println("[networkCallback onAvailable]")
+            println("SDK[networkCallback onAvailable]")
             reconnectManager.triggerReconnect()
         }
 
         override fun onLost(network: Network) {
             // писать ошибку что нет соединения
-            println("[networkCallback onLost]")
+            println("SDK[networkCallback onLost]")
             scope.launch {
                 _connectionState.emit(ConnectionState.Disconnected)
             }
@@ -158,7 +158,7 @@ class ChatService(
         }
 
         val payloadString = payload.encode()
-        println("[payloadString] >>> $payloadString")
+        println("SDK[payloadString] >>> $payloadString")
 
         val options = IO.Options().apply {
             this.reconnection = false
@@ -201,7 +201,7 @@ class ChatService(
 
     internal fun connect() {
         if ( !isConnected()) {
-            println("[connect]")
+            println("SDK[connect]")
             manualDisconnect = false
             socket?.connect()
             _connectionState.value = ConnectionState.Connecting
@@ -215,11 +215,11 @@ class ChatService(
 
 
     internal fun attachListeners() {
-        println("[attachListeners] socket = $socket")
+        println("SDK[attachListeners] socket = $socket")
         socket?.let {
             it.off()
             it.on(Socket.EVENT_CONNECT) {
-                println("#[EVENT_CONNECT]")
+                println("SDK#[EVENT_CONNECT]")
                 _connectionState.value = ConnectionState.Connected
                 messageQueueService.startSendMessageQueue()
                 startChatQueueService.startSend()
@@ -227,7 +227,7 @@ class ChatService(
                 reconnectManager.resetAttempts()
             }
             it.on(SocketEvents.SERVER_RESPONSE) {args ->
-                println("[server-response] >>> ${args.contentToString()}")
+                println("SDK#[server-response] >>> ${args.contentToString()}")
                 scope.launch {
                     val json = when (args.size) {
                         2 -> args[1] as JSONObject
@@ -238,7 +238,7 @@ class ChatService(
                 }
             }
             it.on(Socket.EVENT_DISCONNECT) { args ->
-                println("#[EVENT_DISCONNECT] >>> ${args.contentToString()}")
+                println("SDK#[EVENT_DISCONNECT] >>> ${args.contentToString()}")
                 messageQueueService.disableQueue()
                 startChatQueueService.freeQueue()
                 _connectionState.value = ConnectionState.Disconnected
@@ -250,7 +250,7 @@ class ChatService(
                 scope.launch { _connectionEvents.emit(ConnectionEvent.Disconnected(args.toList())) }
             }
             it.on(Socket.EVENT_CONNECT_ERROR) {args ->
-                println("#[EVENT_CONNECT_ERROR] >>> ${args.contentToString()}")
+                println("SDK#[EVENT_CONNECT_ERROR] >>> ${args.contentToString()}")
                 val err = (args.firstOrNull() as? Throwable)
                     ?: RuntimeException("CONNECT_ERROR: ${args.contentToString()}")
                 _connectionState.value = ConnectionState.Error(err)
@@ -265,7 +265,7 @@ class ChatService(
 
 
     fun initConnect() {
-        if (isConnected()) return
+        disconnect()
         println("[init-connect]")
 
         prepareSocket()
@@ -283,7 +283,6 @@ class ChatService(
 
     fun disconnect() {
         defuseSocket()
-        userData = null
         manualDisconnect = true
         stopNetworkMonitoring()
         _connectionState.value = ConnectionState.Disconnected
@@ -301,7 +300,7 @@ class ChatService(
 
 
     fun sendStartChatMessage(data: StartVisitorChatData) {
-        println("[sendStartChatMessage] >>> ${data.toJson()}")
+        println("SDK[sendStartChatMessage] >>> ${data.toJson()}")
         sharedPrefs.setStartChatMessage(data)
         val message = VisitorMessage(text = data.message, files = listOf())
         scope.launch {
@@ -312,7 +311,7 @@ class ChatService(
 
     fun sendStartChatMessageToServer(data: StartVisitorChatData) {
         if (isConnected()) {
-            println("[visitor-message] >>> ['${SocketEvents.START_VISITOR_CHAT}', ${data.toJson()}]")
+            println("SDK[visitor-message] >>> ['${SocketEvents.START_VISITOR_CHAT}', ${data.toJson()}]")
             socket?.emit(
                 SocketEvents.START_VISITOR_CHAT,
                 data.toJson()
@@ -349,7 +348,7 @@ class ChatService(
     }
 
     fun showPrependMessages(ticket: Int) {
-        println("[load-ticket, $ticket]")
+        println("SDK[load-ticket, $ticket]")
         socket?.emit(
             SocketEvents.LOAD_TICKET,
             ticket

@@ -34,7 +34,6 @@ fun ChatView(
     val nav = rememberNavController()
 
     // стандартный обработчик нажатия кнопок в сообщениях чата
-
     ChatHDE.clickChatButtonActionDefault = {
         when (it.type) {
             ButtonTypes.TEXT -> {
@@ -43,10 +42,10 @@ fun ChatView(
                 )
             }
             ButtonTypes.URL, ButtonTypes.HASH -> {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.value)).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                }
                 try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.value)).apply {
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                    }
                     ctx.startActivity(intent)
                 } catch (e: Exception) {
                     println("[Open browser error] >>> $e")
@@ -101,8 +100,8 @@ fun ChatView(
     }
 
     BackHandler {
-        vm.closeChat()
         onClose()
+        vm.closeChat()
     }
 
     NavHost(
@@ -116,7 +115,6 @@ fun ChatView(
                 modifier = Modifier
                     .fillMaxSize(),
                 onClickClose = {
-                    ChatHDE.onClickClose?.invoke()
                     onClose()
                 },
                 onClickSend = { (ChatHDE.clickSendAction ?: ChatHDE.clickSendActionDefault).invoke(it) },

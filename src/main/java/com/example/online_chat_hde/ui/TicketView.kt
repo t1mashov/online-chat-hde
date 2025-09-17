@@ -27,9 +27,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -72,7 +72,7 @@ fun TicketView(
     uiConfig: ChatUIConfig,
     options: TicketOptions,
     userData: UserData?,
-    ticketStatus: TicketStatus = TicketStatus.DISABLED,
+    ticketStatus: TicketStatus = TicketStatus.CHAT_ACTIVE,
     onClickClose: () -> Unit = {},
     onSubmit: (StartVisitorChatData) -> Unit = {}
 ) {
@@ -137,7 +137,7 @@ fun TicketView(
                         if (ticketStatus == TicketStatus.STAFF_OFFLINE) {
                             Text(
                                 text = uiConfig.texts.ticketOffline,
-                                fontSize = uiConfig.dimensions.ticketSubText,
+                                fontSize = uiConfig.dimensions.ticketSubFontSize,
                                 color = uiConfig.colors.ticketSubText
                             )
                             Spacer(modifier = Modifier.height(uiConfig.dimensions.ticketFieldsIndent))
@@ -153,7 +153,7 @@ fun TicketView(
                             Text(
                                 text = if (emptyNameError.value) uiConfig.texts.emptyNameError else "",
                                 color = uiConfig.colors.errorPrimary,
-                                fontSize = uiConfig.dimensions.ticketSubText,
+                                fontSize = uiConfig.dimensions.ticketSubFontSize,
                                 modifier = Modifier.padding(bottom = 4.dp, top = 2.dp)
                             )
 
@@ -169,7 +169,7 @@ fun TicketView(
                             Text(
                                 text = if (emptyEmailError.value) uiConfig.texts.emptyEmailError else if (invalidEmailError.value) uiConfig.texts.invalidEmailError else "",
                                 color = uiConfig.colors.errorPrimary,
-                                fontSize = uiConfig.dimensions.ticketSubText,
+                                fontSize = uiConfig.dimensions.ticketSubFontSize,
                                 modifier = Modifier.padding(bottom = 4.dp, top = 2.dp)
                             )
                         }
@@ -188,7 +188,7 @@ fun TicketView(
                         Text(
                             text = if (emptyContentError.value) uiConfig.texts.emptyContentError else "",
                             color = uiConfig.colors.errorPrimary,
-                            fontSize = uiConfig.dimensions.ticketSubText,
+                            fontSize = uiConfig.dimensions.ticketSubFontSize,
                             modifier = Modifier.padding(bottom = 4.dp, top = 2.dp)
                         )
 
@@ -201,11 +201,11 @@ fun TicketView(
                                 )
                                 Spacer(Modifier.width(uiConfig.dimensions.innerIndent))
                                 Text(text = uiConfig.texts.ticketPolicy,
-                                    fontSize = uiConfig.dimensions.ticketSubText,
+                                    fontSize = uiConfig.dimensions.ticketSubFontSize,
                                     color = uiConfig.colors.ticketSubText)
                                 Spacer(Modifier.width(uiConfig.dimensions.innerIndent))
                                 Text(text = uiConfig.texts.ticketPolicyLink,
-                                    fontSize = uiConfig.dimensions.ticketSubText,
+                                    fontSize = uiConfig.dimensions.ticketSubFontSize,
                                     color = uiConfig.colors.ticketSubText,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.clickable(
@@ -224,14 +224,14 @@ fun TicketView(
                             Text(
                                 text = if (unacceptedConsentError.value) uiConfig.texts.unacceptedConsentError else "",
                                 color = uiConfig.colors.errorPrimary,
-                                fontSize = uiConfig.dimensions.ticketSubText,
+                                fontSize = uiConfig.dimensions.ticketSubFontSize,
                                 modifier = Modifier.padding(bottom = 4.dp, top = 2.dp)
                             )
                         }
 
                         TicketSendButton(
                             onClick = {
-                                emptyNameError.value = options.showNameField && options.isNameRequired && nameText.value.isEmpty()
+                                emptyNameError.value = options.showNameField && nameText.value.isEmpty()
                                 emptyEmailError.value = options.showEmailField && options.isEmailRequired && emailText.value.isEmpty()
                                 invalidEmailError.value = options.showEmailField && options.isEmailRequired && !emailText.value.isValidEmail()
                                 emptyContentError.value = contentText.value.isEmpty()
@@ -274,7 +274,7 @@ fun TicketSendButton(
             .fillMaxWidth()
             .background(uiConfig.colors.buttonBackground)
             .clickable(
-                indication = rememberRipple(color = uiConfig.colors.userRipple),
+                indication = ripple(color = uiConfig.colors.userRipple),
                 interactionSource = remember { MutableInteractionSource() },
                 onClick = onClick
             )

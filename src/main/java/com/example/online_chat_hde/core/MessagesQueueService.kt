@@ -21,7 +21,7 @@ internal class MessagesQueueService(
 
     // Запуск отправки сообщений из очереди
     fun startSendMessageQueue() {
-        println("[startSendMessageQueue], ${service.isConnected()}, $isQueueFree")
+        println("SDK[startSendMessageQueue], ${service.isConnected()}, $isQueueFree")
         if (service.isConnected() && isQueueFree) {
             sendFirstMessageFromQueue()
         }
@@ -29,7 +29,7 @@ internal class MessagesQueueService(
 
     // Отправляем 1 сообщение из очереди
     private fun sendFirstMessageFromQueue() {
-        println("[sendFirstMessageFromQueue]")
+        println("SDK[sendFirstMessageFromQueue]")
         val messages = sharedPrefs.getMessagesQueue()
         val startChat = sharedPrefs.getStartChatMessage()
         if (messages.isNotEmpty()) {
@@ -37,12 +37,12 @@ internal class MessagesQueueService(
             service.sendMessageToServer(messages[0])
         }
         else if (startChat != null) {
-            println("[sendFirstMessageFromQueue startChat]")
+            println("SDK[sendFirstMessageFromQueue startChat]")
             isQueueFree = false
             service.sendStartChatMessageToServer(startChat)
         }
         else {
-            println("[sendFirstMessageFromQueue free queue]")
+            println("SDK[sendFirstMessageFromQueue free queue]")
             isQueueFree = true
         }
     }

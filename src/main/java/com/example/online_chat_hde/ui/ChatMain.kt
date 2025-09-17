@@ -16,11 +16,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,10 +29,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,13 +54,11 @@ import com.example.online_chat_hde.core.ChatOptions
 import com.example.online_chat_hde.core.ChatService
 import com.example.online_chat_hde.core.ChatViewModel
 import com.example.online_chat_hde.core.ServerOptions
-import com.example.online_chat_hde.core.TicketOptionsWithStatus
 import com.example.online_chat_hde.core.TicketStatus
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 
@@ -86,9 +82,9 @@ fun ChatMain(
 ) {
 
     val ticketStatus = viewModel.ticketStatus.value.status
-    println("[TicketStatus] >>> $ticketStatus")
+    println("SDK[TicketStatus] >>> $ticketStatus")
     when (ticketStatus) {
-        TicketStatus.DISABLED -> {
+        TicketStatus.CHAT_ACTIVE -> {
             ChatPage(viewModel, uiConfig, modifier, onClickClose, onClickSend, onClickLoadDocument, onClickFile, onClickImage, onMessageTyping, onClickChatButton)
         }
         else -> {
@@ -96,25 +92,6 @@ fun ChatMain(
                 // Отправка тикета -> начало чата или уведомление
                 viewModel.isGlobalLoading.value = true
                 viewModel.startChat(it)
-//                when (ticketStatus) {
-//                    TicketStatus.STAFF_OFFLINE -> {
-//                        // Кидаем сообщение в новой переписке на сервер и рисуем пустой экран с текстом
-//                        viewModel.startChat(it)
-////                        viewModel.ticketStatus.value = TicketOptionsWithStatus(
-////                            viewModel.ticketStatus.value.options,
-////                            TicketStatus.WAIT_FOR_REPLY
-////                        )
-//                    }
-//                    TicketStatus.FIRST_MESSAGE -> {
-//                        // Кидаем сообщение и открываем чат
-////                        viewModel.ticketStatus.value = TicketOptionsWithStatus(
-////                            viewModel.ticketStatus.value.options,
-////                            TicketStatus.DISABLED
-////                        )
-//                        viewModel.startChat(it)
-//                    }
-//                    else -> {}
-//                }
 
             }
         }
@@ -205,8 +182,8 @@ fun ChatTopPanel(
                     .background(uiConfig.colors.closeChatButtonBackground)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = rememberRipple(
-                            color = uiConfig.colors.userRipple,
+                        indication = ripple(
+                            color = uiConfig.colors.userRipple
                         )
                     ) {
                         onClickClose()
@@ -279,8 +256,8 @@ fun ChatBottomPanel(
                     modifier = Modifier
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = rememberRipple(
-                                color = uiConfig.colors.userMessageBackground,
+                            indication = ripple(
+                                color = uiConfig.colors.userMessageBackground
                             )
                         ) {
                             filePickerExpanded.value = true
@@ -338,8 +315,8 @@ fun ChatBottomPanel(
                         modifier = Modifier
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(
-                                    color = uiConfig.colors.userMessageBackground,
+                                indication = ripple(
+                                    color = uiConfig.colors.userMessageBackground
                                 )
                             ) {
                                 onClickSend(messageText.trim())
@@ -399,7 +376,7 @@ fun ChatPage(
     onMessageTyping: (String) -> Unit,
     onClickChatButton: ((ChatButton) -> Unit)?,
 ) {
-    println("[ChatPage compose]")
+    println("SDK[ChatPage compose]")
     val messages = viewModel.messages + viewModel.loadingMessages
 
     val focusManager = LocalFocusManager.current
@@ -491,7 +468,7 @@ fun ChatPage(
                 }
 
                 // Предыдущие сообщения
-                if (viewModel.loadedTicket.intValue < viewModel.totalTickets.intValue && viewModel.isConnected.value) {
+                if (viewModel.totalTickets.intValue > 1 && viewModel.loadedTicket.intValue < viewModel.totalTickets.intValue && viewModel.isConnected.value) {
                     PrependMessagesView(viewModel, uiConfig)
                 }
 
@@ -534,7 +511,6 @@ fun ChatPage(
                                     )
                                 }
                                 is Message.Server -> {
-                                    val canShowButtons = remember { mutableStateOf(true) }
                                     ServerMessageView(
                                         item,
                                         viewModel.getServerOptions().originUrl,
@@ -547,10 +523,10 @@ fun ChatPage(
                                                 viewModel.deleteMessage(message.uuid)
                                             }
                                             if (btn.hideButtons) {
-                                                canShowButtons.value = false
+                                                item.showButtons.value = false
                                             }
                                         },
-                                        showButtons = (curIdx == messages.size-1) && canShowButtons.value,
+                                        showButtons = (curIdx == messages.size-1) && item.showButtons.value,
                                         modifier = Modifier.padding(horizontal = uiConfig.dimensions.contentHorizontalPadding),
                                     )
                                 }
@@ -610,7 +586,7 @@ fun PrependMessagesView(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(
+                indication = ripple(
                     color = uiConfig.colors.topPanelBackground
                 )
             ) {

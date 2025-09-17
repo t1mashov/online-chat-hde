@@ -88,7 +88,7 @@ fun UserTextMessageView(
                                 } else {
                                     MessageLoading(
                                         uiConfig.colors.userMessageText,
-                                        uiConfig.dimensions.loadingSize
+                                        uiConfig.dimensions.messageLoadingIconSize
                                     )
                                 }
                             }
@@ -112,7 +112,7 @@ fun UserTextMessageView(
                                 } else {
                                     MessageLoading(
                                         uiConfig.colors.userTimeText,
-                                        uiConfig.dimensions.loadingSize
+                                        uiConfig.dimensions.messageLoadingIconSize
                                     )
                                 }
                             }

@@ -11,7 +11,7 @@ import java.util.UUID
 // данные сообщения, для отправки на сервер
 class VisitorMessage(
     var text: String,
-    var files: List<VisitorFile>
+    var files: List<VisitorFile> = listOf()
 ) {
     var uuid: String = UUID.randomUUID().toString()
 
@@ -51,16 +51,6 @@ class VisitorFile(
         put("uid", uid)
     }
     companion object {
-        fun prepare(file: File): VisitorFile {
-            val digest = MessageDigest.getInstance("MD5")
-            val bytes = file.readBytes()
-            val hashBytes = digest.digest(bytes).joinToString("") { "%02x".format(it) }
-            return VisitorFile(
-                fileName = file.name,
-                tempFileName = hashBytes,
-                uid = System.currentTimeMillis()
-            )
-        }
         fun fromJson(json: JSONObject): VisitorFile {
             return VisitorFile(
                 fileName = json.getString("fileName"),
