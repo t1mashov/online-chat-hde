@@ -139,10 +139,6 @@ object ChatHDE {
         client?.setUser(null)
     }
 
-    fun clearUser() {
-        service?.setUser(null)
-    }
-
     fun connect() {
         client?.initConnect()
     }
