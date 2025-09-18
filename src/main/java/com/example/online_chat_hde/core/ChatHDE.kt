@@ -2,12 +2,17 @@ package com.example.online_chat_hde.core
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import com.example.online_chat_hde.ChatActivity
 import com.example.online_chat_hde.models.ChatButton
+import com.example.online_chat_hde.models.ChatOptions
+import com.example.online_chat_hde.models.ConnectionEvent
+import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.FileData
-import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
+import com.example.online_chat_hde.models.MessagingEvent
+import com.example.online_chat_hde.models.TicketOptions
 import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
@@ -18,7 +23,7 @@ import java.util.Date
 import java.util.Locale
 
 object ChatHDE {
-    @Volatile private var service: ChatService? = null
+    @Volatile private var client: ChatClient? = null
     @Volatile internal var defaultUi: ChatUIConfig = ChatUIConfigDefault
 
     fun init(
@@ -28,45 +33,33 @@ object ChatHDE {
         ticketOptions: TicketOptions = TicketOptions(),
         uiConfig: ChatUIConfig = ChatUIConfigDefault
     ) {
-        if (service == null) {
-            service = ChatService(context.applicationContext, serverOptions, chatOptions, ticketOptions)
+        if (client == null) {
+            client = ChatClient(context.applicationContext, serverOptions, chatOptions, ticketOptions)
             defaultUi = uiConfig
         }
     }
 
     fun setServerOptions(options: ServerOptions) {
-        requireService().serverOptions = options
-    }
-
-    fun setChatOptions(options: ChatOptions) {
-        requireService().chatOptions = options
-    }
-
-    fun setTicketOptions(options: TicketOptions) {
-        requireService().ticketOptions = options
-    }
-
-    fun setUiConfig(config: ChatUIConfig) {
-        defaultUi = config
+        requireClient().serverOptions = options
     }
 
 
-    fun requireService(): ChatService =
-        requireNotNull(service) { "Call ChatSdk.init(...) first" }
+    fun requireClient(): ChatClient =
+        requireNotNull(client) { "Call ChatSdk.init(...) first" }
 
-    fun chatViewModelFactory(): ViewModelProvider.Factory = ChatViewModelFactory(requireService())
+    fun chatViewModelFactory(): ViewModelProvider.Factory = ChatViewModelFactory(requireClient())
 
     /** события сервиса */
     val connectionEvents: SharedFlow<ConnectionEvent>
-        get() = requireService().connectionEvents
+        get() = requireClient().connectionEvents
 
     /** События сокета */
     val messagingEvents: SharedFlow<MessagingEvent>
-        get() = requireService().messagingEvents
+        get() = requireClient().messagingEvents
 
     /** Состояние соединения */
     val connectionState: SharedFlow<ConnectionState>
-        get() = requireService().connectionState
+        get() = requireClient().connectionState
 
 
     internal var onMessageTyping: ((String) -> Unit)? = null
@@ -123,11 +116,15 @@ object ChatHDE {
             this.isVirtual = true
             this.chatButtons = chatButtons
         }
-        service?.sendVirtualMessage(message)
+        client?.sendVirtualMessage(message)
     }
 
     fun sendMessage(message: VisitorMessage) {
-        service?.sendMessage(message)
+        client?.sendMessage(message)
+    }
+
+    fun uploadFile(file: Uri) {
+        client?.uploadFileService?.uploadFile(file)
     }
 
 
@@ -135,7 +132,11 @@ object ChatHDE {
 
 
     fun setUser(user: UserData) {
-        service?.setUser(user)
+        client?.setUser(user)
+    }
+
+    fun clearUser() {
+        client?.setUser(null)
     }
 
     fun clearUser() {
@@ -143,11 +144,11 @@ object ChatHDE {
     }
 
     fun connect() {
-        service?.initConnect()
+        client?.initConnect()
     }
 
     fun disconnect() {
-        service?.disconnect()
+        client?.disconnect()
     }
 
 

@@ -15,10 +15,15 @@ import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
+import com.example.online_chat_hde.models.MessagingEvent
 import com.example.online_chat_hde.models.Staff
 import com.example.online_chat_hde.models.StartVisitorChatData
+import com.example.online_chat_hde.models.TicketOptions
+import com.example.online_chat_hde.models.TicketOptionsWithStatus
+import com.example.online_chat_hde.models.TicketStatus
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
 import kotlinx.coroutines.delay
@@ -33,12 +38,12 @@ import kotlin.math.roundToInt
 
 
 class ChatViewModelFactory(
-    private val chatService: ChatService
+    private val chatClient: ChatClient
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return ChatViewModel(chatService) as T
+        return ChatViewModel(chatClient) as T
     }
 }
 
@@ -48,7 +53,7 @@ class ChatViewModelFactory(
 
 
 class ChatViewModel(
-    val service: ChatService
+    val client: ChatClient
 ): ViewModel() {
 
     private val _messages = mutableStateListOf<OrientedMessage>()
@@ -167,7 +172,7 @@ class ChatViewModel(
 
         // Обработка событий сообщений
         viewModelScope.launch {
-            service.messagingEvents.collect { event ->
+            client.messagingEvents.collect { event ->
                 when (event) {
                     is MessagingEvent.Server -> when (event) {
                         is MessagingEvent.Server.NewMessage -> {
@@ -215,7 +220,7 @@ class ChatViewModel(
                             val status = TicketOptionsWithStatus(
                                 options = ticketOptions,
                                 status = if (event.data.data.ticketForm) TicketStatus.STAFF_OFFLINE
-                                         else if (service.getStartChatMessage() != null || disabledTicket) TicketStatus.CHAT_ACTIVE
+                                         else if (client.getStartChatMessage() != null || disabledTicket) TicketStatus.CHAT_ACTIVE
                                          else if (event.data.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
                                          else TicketStatus.CHAT_ACTIVE
                             )
@@ -224,10 +229,10 @@ class ChatViewModel(
                             when (val initWidgetData = event.data.data) {
                                 is InitWidgetData.First -> {
                                     initWidgetData.initialChatButtons?.let {
-                                        handleInitMessages(listOf(Message.Server(name = service.chatOptions.botName).apply {
+                                        handleInitMessages(listOf(Message.Server(name = client.chatOptions.botName).apply {
                                             chatButtons = it
                                             isVirtual = true
-                                            text = service.chatOptions.welcomeMessage
+                                            text = client.chatOptions.welcomeMessage
                                         }))
                                     }
                                     totalTickets.intValue = 1
@@ -236,7 +241,7 @@ class ChatViewModel(
                                 is InitWidgetData.Progress -> {
                                     totalTickets.intValue = initWidgetData.widgetChat.totalTickets
                                     // Добавляем кнопки к последнему сообщению если есть
-                                    val savedButtons = service.getChatButtons()
+                                    val savedButtons = client.getChatButtons()
                                     if (savedButtons.isNotEmpty()) {
                                         initWidgetData.widgetChat.messages.lastOrNull()?.let {
                                             it.chatButtons = savedButtons
@@ -292,7 +297,7 @@ class ChatViewModel(
 
         // Отслеживаем ошибки загрузки файла
         viewModelScope.launch {
-            service.errorEvents.collect {
+            client.errorEvents.collect {
                 isGlobalLoading.value = false
                 showTopError(it)
             }
@@ -301,7 +306,7 @@ class ChatViewModel(
 
         // Отслеживание состояния подключения
         viewModelScope.launch {
-            service.connectionState.collect { conn ->
+            client.connectionState.collect { conn ->
                 isConnected.value = conn is ConnectionState.Connected
             }
         }
@@ -436,12 +441,12 @@ class ChatViewModel(
 
 
     fun startChat(data: StartVisitorChatData) {
-        service.sendStartChatMessage(data)
+        client.sendStartChatMessage(data)
     }
 
 
     fun sendMessage(text: String) {
-        service.sendMessage(message = VisitorMessage(
+        client.sendMessage(message = VisitorMessage(
             text = text,
             files = listOf()
         ))
@@ -449,40 +454,40 @@ class ChatViewModel(
 
     fun connect() {
         if (!isConnected.value) {
-            service.initConnect()
+            client.initConnect()
             isGlobalLoading.value = true
         }
     }
 
     fun closeChat() {
-        service.disconnect()
+        client.disconnect()
     }
 
 
     fun uploadFile(uri: Uri, size: Long) {
         // Ограничиваем размер файла
-        if (size / 1024 / 1024 > service.chatOptions.maxUploadFileSizeMB) {
+        if (size / 1024 / 1024 > client.chatOptions.maxUploadFileSizeMB) {
             showTopError(ErrorKeys.FILE_MAX_SIZE)
         }
         else {
             isGlobalLoading.value = true
-            service.uploadFileService.uploadFile(uri)
+            client.uploadFileService.uploadFile(uri)
         }
     }
 
     fun showPrependMessages() {
         isGlobalLoading.value = true
         loadedTicket.intValue += 1
-        service.showPrependMessages(loadedTicket.intValue)
+        client.showPrependMessages(loadedTicket.intValue)
     }
 
     fun visitorIsTyping(text: String) {
-        service.visitorIsTyping(text)
+        client.visitorIsTyping(text)
     }
 
-    fun getTicketOptions() = service.ticketOptions
-    fun getUserData() = service.userData
-    fun getServerOptions() = service.serverOptions
+    fun getTicketOptions() = client.ticketOptions
+    fun getUserData() = client.userData
+    fun getServerOptions() = client.serverOptions
 
     fun saveScroll() {
         viewModelScope.launch { _saveScroll.emit(Unit) }

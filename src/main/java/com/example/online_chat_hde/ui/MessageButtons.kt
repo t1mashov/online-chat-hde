@@ -23,7 +23,7 @@ import com.example.online_chat_hde.models.ChatButton
 
 
 @Composable
-fun ButtonsColumn(
+internal fun ButtonsColumn(
     buttons: List<ChatButton>,
     uiConfig: ChatUIConfig,
     widgetWidth: Dp,
@@ -47,7 +47,7 @@ fun ButtonsColumn(
 
 
 @Composable
-fun ChatMessageButton(
+internal fun ChatMessageButton(
     button: ChatButton,
     uiConfig: ChatUIConfig,
     onChatButtonClick: (ChatButton) -> Unit,

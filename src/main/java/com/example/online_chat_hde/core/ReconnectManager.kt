@@ -1,5 +1,6 @@
 package com.example.online_chat_hde.core
 
+import com.example.online_chat_hde.models.ConnectionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -9,7 +10,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 internal class ReconnectManager(
-    private val service: ChatService
+    private val service: ChatClient
 ) {
 
     private val reconnecting = java.util.concurrent.atomic.AtomicBoolean(false)

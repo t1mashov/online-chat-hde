@@ -26,7 +26,7 @@ import com.example.online_chat_hde.models.Message
 
 
 @Composable
-fun UserTextMessageView(
+internal fun UserTextMessageView(
     orientedMessage: OrientedMessage,
     uiConfig: ChatUIConfig,
     isLoading: Boolean = false,
@@ -130,7 +130,7 @@ fun UserTextMessageView(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewUserTextMessage() {
+internal fun PreviewUserTextMessage() {
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         UserTextMessageView(

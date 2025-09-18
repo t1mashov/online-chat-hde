@@ -31,7 +31,7 @@ import coil3.request.crossfade
 import com.example.online_chat_hde.models.FileData
 
 @Composable
-fun UserImageMessageView(
+internal fun UserImageMessageView(
     image: FileData.Image,
     time: String,
     baseURL: String,
@@ -153,7 +153,7 @@ fun UserImageMessageView(
 
 @Preview
 @Composable
-fun UserImageMessagePreview() {
+internal fun UserImageMessagePreview() {
     UserImageMessageView(
         image = FileData.Image(
             preview = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150",

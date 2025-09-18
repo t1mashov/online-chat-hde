@@ -9,7 +9,7 @@ import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
 
 @Composable
-fun UserMessageView(
+internal fun UserMessageView(
     orientedMessage: OrientedMessage,
     baseURL: String,
     onFileClick: (FileData.Text) -> Unit,
@@ -63,7 +63,7 @@ fun UserMessageView(
 
 @Preview
 @Composable
-fun UserMessageWidgetPreview() {
+internal fun UserMessageWidgetPreview() {
     Column {
         UserMessageView(
             orientedMessage = OrientedMessage(

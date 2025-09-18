@@ -15,7 +15,7 @@ import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import com.example.online_chat_hde.R
 
 @Composable
-fun MessageLoading(
+internal fun MessageLoading(
     color: Color,
     size: Dp
 ) {

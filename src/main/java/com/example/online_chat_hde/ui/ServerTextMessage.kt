@@ -28,7 +28,7 @@ import com.example.online_chat_hde.models.Message
 
 
 @Composable
-fun ServerTextMessageView(
+internal fun ServerTextMessageView(
     orientedMessage: OrientedMessage,
     uiConfig: ChatUIConfig,
     onButtonClick: (ChatButton) -> Unit = {},
@@ -197,7 +197,7 @@ fun ServerTextMessageView(
 
 @Preview(showBackground = true)
 @Composable
-fun TestScreen2() {
+internal fun TestScreen2() {
 
         Column {
 

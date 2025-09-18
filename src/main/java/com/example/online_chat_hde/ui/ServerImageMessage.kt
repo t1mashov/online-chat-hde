@@ -32,7 +32,7 @@ import com.example.online_chat_hde.models.FileData
 
 
 @Composable
-fun ServerImageMessageView(
+internal fun ServerImageMessageView(
     image: FileData.Image,
     time: String,
     baseURL: String,
@@ -158,7 +158,7 @@ fun ServerImageMessageView(
 
 @Preview
 @Composable
-fun ServerImageMessagePreview() {
+internal fun ServerImageMessagePreview() {
     ServerImageMessageView(
         image = FileData.Image(
             preview = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150",

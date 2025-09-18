@@ -9,7 +9,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.online_chat_hde.models.MessageDate
 
 @Composable
-fun DateView(
+internal fun DateView(
     date: MessageDate,
     uiConfig: ChatUIConfig
 ) {

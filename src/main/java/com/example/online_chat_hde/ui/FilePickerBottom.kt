@@ -50,7 +50,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilePickerBottom(
+internal fun FilePickerBottom(
     expanded: MutableState<Boolean>,
     uiConfig: ChatUIConfig,
     onFileLoaded: (Uri, Long) -> Unit = {_, _ ->},

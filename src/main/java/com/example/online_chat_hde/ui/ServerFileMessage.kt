@@ -36,7 +36,7 @@ import com.example.online_chat_hde.models.Message
 
 
 @Composable
-fun ServerFileMessageView(
+internal fun ServerFileMessageView(
     orientedMessage: OrientedMessage,
     file: FileData.Text,
     name: String,
@@ -219,7 +219,7 @@ fun ServerFileMessageView(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewServerFileMessage() {
+internal fun PreviewServerFileMessage() {
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         ServerFileMessageView(

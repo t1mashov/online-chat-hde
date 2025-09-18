@@ -33,7 +33,7 @@ private fun styleFor(color: Int): SystemBarStyle {
 
 class ChatActivity : ComponentActivity() {
 
-    private val chatService by lazy { ChatHDE.requireService() }
+    private val chatService by lazy { ChatHDE.requireClient() }
     private val viewModel by viewModels<ChatViewModel> { ChatViewModelFactory(chatService) }
 
     override fun onCreate(savedInstanceState: Bundle?) {

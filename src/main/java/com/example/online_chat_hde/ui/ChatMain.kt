@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -50,11 +49,11 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.example.online_chat_hde.core.ButtonTypes
-import com.example.online_chat_hde.core.ChatOptions
-import com.example.online_chat_hde.core.ChatService
+import com.example.online_chat_hde.models.ChatOptions
+import com.example.online_chat_hde.core.ChatClient
 import com.example.online_chat_hde.core.ChatViewModel
 import com.example.online_chat_hde.core.ServerOptions
-import com.example.online_chat_hde.core.TicketStatus
+import com.example.online_chat_hde.models.TicketStatus
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
@@ -63,12 +62,12 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 
 
-val LocalTimeSize = staticCompositionLocalOf<Int> {
+internal val LocalTimeSize = staticCompositionLocalOf<Int> {
     error("No char size provided")
 }
 
 @Composable
-fun ChatMain(
+internal fun ChatMain(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     modifier: Modifier = Modifier,
@@ -102,7 +101,7 @@ fun ChatMain(
 
 
 @Composable
-fun ChatTopPanel(
+internal fun ChatTopPanel(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     onClickClose: () -> Unit
@@ -205,7 +204,7 @@ fun ChatTopPanel(
 
 
 @Composable
-fun ChatBottomPanel(
+internal fun ChatBottomPanel(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     onClickSend: (String) -> Unit,
@@ -364,7 +363,7 @@ fun ChatBottomPanel(
 
 
 @Composable
-fun ChatPage(
+internal fun ChatPage(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     modifier: Modifier = Modifier,
@@ -553,7 +552,7 @@ fun ChatPage(
 
 
 @Composable
-fun ErrorTopView(
+internal fun ErrorTopView(
     error: String,
     uiConfig: ChatUIConfig
 ) {
@@ -576,7 +575,7 @@ fun ErrorTopView(
 
 
 @Composable
-fun PrependMessagesView(
+internal fun PrependMessagesView(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig
 ) {
@@ -607,8 +606,8 @@ fun PrependMessagesView(
 @SuppressLint("ViewModelConstructorInComposable")
 @Preview
 @Composable
-fun ChatPagePreview() {
-    val service = ChatService(
+internal fun ChatPagePreview() {
+    val service = ChatClient(
         serverOptions = ServerOptions(
             socketUrl = "wss://domain.com",
             originUrl = "https://domain.com",

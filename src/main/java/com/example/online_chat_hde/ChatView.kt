@@ -29,7 +29,7 @@ fun ChatView(
     val ctx = LocalContext.current
 
     val vm: ChatViewModel = viewModel(factory = ChatHDE.chatViewModelFactory())
-    val chatService = vm.service
+    val chatService = vm.client
 
     val nav = rememberNavController()
 

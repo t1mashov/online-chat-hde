@@ -3,9 +3,13 @@ package com.example.online_chat_hde.core
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
+import com.example.online_chat_hde.models.ChatOptions
+import com.example.online_chat_hde.models.ConnectionEvent
+import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.InitResponse
 import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
+import com.example.online_chat_hde.models.MessagingEvent
 import com.example.online_chat_hde.models.NewMessageResponse
 import com.example.online_chat_hde.models.PrependMessagesResponse
 import com.example.online_chat_hde.models.SetStaffResponse
@@ -13,6 +17,7 @@ import com.example.online_chat_hde.models.StartVisitorChatData
 import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.models.StartChatResponse
+import com.example.online_chat_hde.models.TicketOptions
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import io.socket.client.IO
@@ -30,7 +35,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 
-class ChatService(
+class ChatClient(
     context: Context,
     var serverOptions: ServerOptions,
     var chatOptions: ChatOptions,

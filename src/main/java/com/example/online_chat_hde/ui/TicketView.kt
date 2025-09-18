@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
@@ -57,17 +58,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.online_chat_hde.core.ChatOptions
-import com.example.online_chat_hde.core.ChatService
+import com.example.online_chat_hde.models.ChatOptions
+import com.example.online_chat_hde.core.ChatClient
 import com.example.online_chat_hde.core.ChatViewModel
 import com.example.online_chat_hde.core.ServerOptions
-import com.example.online_chat_hde.core.TicketOptions
-import com.example.online_chat_hde.core.TicketStatus
+import com.example.online_chat_hde.models.TicketOptions
+import com.example.online_chat_hde.models.TicketStatus
 import com.example.online_chat_hde.models.StartVisitorChatData
 import com.example.online_chat_hde.models.UserData
 
 @Composable
-fun TicketView(
+internal fun TicketView(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     options: TicketOptions,
@@ -114,7 +115,7 @@ fun TicketView(
             }
         }
         else {
-            if (ticketStatus ==TicketStatus.WAIT_FOR_REPLY) {
+            if (ticketStatus == TicketStatus.WAIT_FOR_REPLY) {
                 // Спасибо за сообщение, ждите ответа
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -263,7 +264,7 @@ fun TicketView(
 
 
 @Composable
-fun TicketSendButton(
+internal fun TicketSendButton(
     onClick: () -> Unit,
     uiConfig: ChatUIConfig
 ) {
@@ -290,7 +291,7 @@ fun TicketSendButton(
 
 
 @Composable
-fun TicketTextField(
+internal fun TicketTextField(
     value: MutableState<String>,
     placeholder: String,
     icon: Int? = null,
@@ -337,10 +338,11 @@ fun TicketTextField(
                     Image(
                         imageVector = ImageVector.vectorResource(it),
                         contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
                         colorFilter = ColorFilter.tint(uiConfig.colors.ticketFieldDisabled),
                         modifier = Modifier
-                            .size(24.dp)
-                            .padding(end = 12.dp)
+                            .padding(start = 4.dp, end = 8.dp)
+                            .size(20.dp, 26.dp)
                     )
                 }
 
@@ -367,7 +369,7 @@ fun TicketTextField(
 
 
 @Composable
-fun TicketCheckbox(
+internal fun TicketCheckbox(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -426,7 +428,7 @@ fun TicketCheckbox(
 
 
 
-fun String.isValidEmail(): Boolean =
+internal fun String.isValidEmail(): Boolean =
     this.trim().let { it.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(it).matches() }
 
 
@@ -435,8 +437,8 @@ fun String.isValidEmail(): Boolean =
 @SuppressLint("ViewModelConstructorInComposable")
 @Preview
 @Composable
-fun TicketPreview() {
-    val service = ChatService(
+internal fun TicketPreview() {
+    val service = ChatClient(
         serverOptions = ServerOptions(
             socketUrl = "wss://domain.com",
             originUrl = "https://domain.com",

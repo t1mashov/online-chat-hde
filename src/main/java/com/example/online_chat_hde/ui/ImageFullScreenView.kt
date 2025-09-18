@@ -42,7 +42,7 @@ import coil3.size.Size
 import com.example.online_chat_hde.models.FileData
 
 @Composable
-fun ImageFullScreen(
+internal fun ImageFullScreen(
     image: FileData.Image,
     baseURL: String,
     uiConfig: ChatUIConfig

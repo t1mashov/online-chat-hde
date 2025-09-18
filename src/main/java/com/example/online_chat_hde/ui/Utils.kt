@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.TextUnit
 
 
 
-fun calculateTextMessageWidth(
+internal fun calculateTextMessageWidth(
     text: String,
     density: Density,
     uiConfig: ChatUIConfig
@@ -20,7 +20,7 @@ fun calculateTextMessageWidth(
 
 
 
-fun calculateTextWidth(
+internal fun calculateTextWidth(
     text: String,
     density: Density,
     fontSize: TextUnit

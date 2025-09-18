@@ -1,10 +1,9 @@
 package com.example.online_chat_hde.core
 
-import android.content.Context
 import com.example.online_chat_hde.models.NewMessageResponse
 
 internal class MessagesQueueService(
-    private val service: ChatService,
+    private val service: ChatClient,
     private val sharedPrefs: SharedPrefs
 ) {
 
@@ -53,7 +52,7 @@ internal class MessagesQueueService(
 
 
 internal class StartChatQueueService(
-    private val service: ChatService,
+    private val service: ChatClient,
     private val sharedPrefs: SharedPrefs
 ) {
 

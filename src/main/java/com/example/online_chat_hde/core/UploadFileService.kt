@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Callback
@@ -26,7 +25,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 internal class UploadFileService(
-    val service: ChatService,
+    val service: ChatClient,
     val context: Context
 ) {
 

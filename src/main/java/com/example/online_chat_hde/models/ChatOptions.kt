@@ -1,4 +1,4 @@
-package com.example.online_chat_hde.core
+package com.example.online_chat_hde.models
 
 data class ChatOptions(
     val welcomeMessage: String,

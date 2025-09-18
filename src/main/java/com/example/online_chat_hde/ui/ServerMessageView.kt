@@ -9,7 +9,7 @@ import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
 
 @Composable
-fun ServerMessageView(
+internal fun ServerMessageView(
     orientedMessage: OrientedMessage,
     baseURL: String,
     onFileClick: (FileData.Text) -> Unit,
