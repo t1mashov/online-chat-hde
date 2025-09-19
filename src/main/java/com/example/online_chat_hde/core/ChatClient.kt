@@ -7,7 +7,6 @@ import com.example.online_chat_hde.models.ChatOptions
 import com.example.online_chat_hde.models.ChatSavableData
 import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.InitResponse
-import com.example.online_chat_hde.models.InitWidgetData
 import com.example.online_chat_hde.models.Message
 import com.example.online_chat_hde.models.MessagingEvent
 import com.example.online_chat_hde.models.NewMessageResponse
@@ -115,15 +114,17 @@ class ChatClient(
 
 
     private fun prepareSocket() {
+        println("SDK[prepareSocket userData] >>> ${userData?.toJson()}")
         if (userData != null) {
             val payload = Payload.Auth.fromVisitorData(userData!!)
             buildSocket(payload)
         }
         else if (chatOptions.saveUserAfterConnection) {
-            val userData = sharedPrefs.getUser()
-            val payload = if (userData != null) {
+            val user = sharedPrefs.getUser()
+            println("SDK[prepareSocket get user] >>> ${user?.toJson()}")
+            val payload = if (user != null) {
                 // получаем юзера из shared prefs
-                Payload.Auth.fromVisitorData(userData)
+                Payload.Auth.fromVisitorData(user)
             } else {
                 // Создаем нового юзера
                 Payload.NewUser()
@@ -198,6 +199,7 @@ class ChatClient(
 
     fun setUser(data: UserData?) {
         userData = data
+        sharedPrefs.saveUser(data)
     }
 
     internal fun connect() {
@@ -310,6 +312,11 @@ class ChatClient(
     fun sendStartChatMessageToServer(data: StartVisitorChatData) {
         if (isConnected()) {
             println("SDK[visitor-message] >>> ['${SocketEvents.START_VISITOR_CHAT}', ${data.toJson()}]")
+            userData?.name = data.name
+            userData?.email = data.email
+            if (chatOptions.saveUserAfterConnection) {
+                sharedPrefs.saveUser(userData)
+            }
             socket?.emit(
                 SocketEvents.START_VISITOR_CHAT,
                 data.toJson()
@@ -383,6 +390,16 @@ class ChatClient(
         sharedPrefs.saveChatButtons(data.chatButtons)
         sharedPrefs.setMessagesQueue(data.messagesQueue)
         sharedPrefs.setStartChatMessage(data.startChatDatta)
+    }
+
+    fun clearSavedData() {
+        userData = null
+        sharedPrefs.saveUser(null)
+        sharedPrefs.saveStaff(null)
+        sharedPrefs.saveChatButtons(listOf())
+        sharedPrefs.setMessagesQueue(listOf())
+        sharedPrefs.setStartChatMessage(null)
+        messageQueueService.disableQueue()
     }
 
 

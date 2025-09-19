@@ -41,7 +41,7 @@ class Staff (
         fun fromJson(json: JSONObject): Staff {
             val res = Staff(
                 name = json.getString("name"),
-                image = if (json.opt("image") == JSONObject.NULL) null
+                image = if (!json.has("image") || json.opt("image") == JSONObject.NULL) null
                         else json.getString("image")
             )
             return res

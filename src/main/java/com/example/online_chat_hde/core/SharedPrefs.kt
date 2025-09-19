@@ -15,14 +15,14 @@ internal class SharedPrefs(private val context: Context) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         if (data == null) {
             prefs.edit()
-                .putString(StorageKeys.VISITOR_DATA, null)
-                .apply()
+                .remove(StorageKeys.VISITOR_DATA)
+                .commit()
         }
         else {
             val txt = data.toJson().toString()
             prefs.edit()
                 .putString(StorageKeys.VISITOR_DATA, txt)
-                .apply()
+                .commit()
         }
     }
     fun getUser(): UserData? {
@@ -37,8 +37,8 @@ internal class SharedPrefs(private val context: Context) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         if (data == null) {
             prefs.edit()
-                .putString(StorageKeys.START_CHAT_DATA, null)
-                .apply()
+                .remove(StorageKeys.START_CHAT_DATA)
+                .commit()
         }
         else {
             val dataTxt = data.toJson().toString()
@@ -72,7 +72,7 @@ internal class SharedPrefs(private val context: Context) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(StorageKeys.MESSAGE_QUEUE, messageTxt)
-            .commit()
+            .apply()
     }
     fun getMessagesQueue(): List<VisitorMessage> {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)

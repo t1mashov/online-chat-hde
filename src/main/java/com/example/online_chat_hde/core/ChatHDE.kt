@@ -131,6 +131,10 @@ object ChatHDE {
         client?.setUser(null)
     }
 
+    fun clearSavedData() {
+        client?.clearSavedData()
+    }
+
     fun connect() {
         client?.initConnect()
     }

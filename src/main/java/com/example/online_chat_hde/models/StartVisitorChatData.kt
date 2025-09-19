@@ -18,6 +18,7 @@ data class StartVisitorChatData(
     }
     companion object {
         fun fromJson(json: JSONObject): StartVisitorChatData {
+            println("[StartVisitorChatData json] >>> $json")
             return StartVisitorChatData(
                 name = json.getString("name"),
                 email = json.getString("email"),
