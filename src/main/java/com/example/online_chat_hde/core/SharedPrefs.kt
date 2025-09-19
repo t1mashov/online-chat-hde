@@ -9,7 +9,7 @@ import com.example.online_chat_hde.models.VisitorMessage
 import org.json.JSONArray
 import org.json.JSONObject
 
-class SharedPrefs(private val context: Context) {
+internal class SharedPrefs(private val context: Context) {
 
     fun saveUser(data: UserData?) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
@@ -19,7 +19,7 @@ class SharedPrefs(private val context: Context) {
                 .apply()
         }
         else {
-            val txt = data.toJsonString()
+            val txt = data.toJson().toString()
             prefs.edit()
                 .putString(StorageKeys.VISITOR_DATA, txt)
                 .apply()
@@ -29,7 +29,7 @@ class SharedPrefs(private val context: Context) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         val jsonString = prefs.getString(StorageKeys.VISITOR_DATA, null)
         return if (jsonString != null) UserData.fromJson(JSONObject(jsonString))
-               else null
+        else null
     }
 
 
@@ -54,21 +54,21 @@ class SharedPrefs(private val context: Context) {
             null
         )
         return if (jsonString == null) null
-               else StartVisitorChatData.fromJson(JSONObject(jsonString))
+        else StartVisitorChatData.fromJson(JSONObject(jsonString))
     }
 
 
     fun addMessageToQueue(message: VisitorMessage) {
         val queue = getMessagesQueue().toMutableList()
         queue.add(message)
-        val messageTxt = VisitorMessage.toJsonArrayString(queue)
+        val messageTxt = VisitorMessage.toJsonArray(queue).toString()
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(StorageKeys.MESSAGE_QUEUE, messageTxt)
             .apply()
     }
-    private fun setMessagesQueue(messages: List<VisitorMessage>) {
-        val messageTxt = VisitorMessage.toJsonArrayString(messages)
+    fun setMessagesQueue(messages: List<VisitorMessage>) {
+        val messageTxt = VisitorMessage.toJsonArray(messages).toString()
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(StorageKeys.MESSAGE_QUEUE, messageTxt)
@@ -93,7 +93,7 @@ class SharedPrefs(private val context: Context) {
 
 
     fun saveChatButtons(buttons: List<ChatButton>) {
-        val buttonsTxt = ChatButton.toJsonArrayString(buttons)
+        val buttonsTxt = ChatButton.toJsonArray(buttons).toString()
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(StorageKeys.CHAT_BUTTONS, buttonsTxt)
@@ -105,8 +105,9 @@ class SharedPrefs(private val context: Context) {
         return ChatButton.fromJsonArray(JSONArray(jsonString))
     }
 
-    fun saveStaff(staff: Staff) {
-        val staffText = staff.toJsonString()
+
+    fun saveStaff(staff: Staff?) {
+        val staffText = staff?.toJson()?.toString()
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(StorageKeys.STAFF_DATA, staffText)
@@ -116,7 +117,7 @@ class SharedPrefs(private val context: Context) {
         val prefs = context.getSharedPreferences(StorageKeys.STORAGE_NAME, Context.MODE_PRIVATE)
         val jsonString = prefs.getString(StorageKeys.STAFF_DATA, null)
         return if (jsonString != null) Staff.fromJson(JSONObject(jsonString))
-               else null
+        else null
     }
 
 }

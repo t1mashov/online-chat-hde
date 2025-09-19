@@ -31,8 +31,11 @@ class Staff (
     var name: String,
     var image: String?,
 ) {
-    fun toJsonString(): String {
-        return """{"name":"$name", "image":${if (image == null) "null" else "\"$image\""}}"""
+    fun toJson(): JSONObject {
+        return JSONObject().apply {
+            put("name", name)
+            put("image", image)
+        }
     }
     companion object {
         fun fromJson(json: JSONObject): Staff {

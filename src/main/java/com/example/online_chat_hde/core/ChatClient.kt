@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import com.example.online_chat_hde.models.ChatOptions
-import com.example.online_chat_hde.models.ConnectionEvent
+import com.example.online_chat_hde.models.ChatSavableData
 import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.InitResponse
 import com.example.online_chat_hde.models.InitWidgetData
@@ -47,10 +47,6 @@ class ChatClient(
     // Состояние соединения
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.NeverConnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
-
-    // События соединения
-    private val _connectionEvents = MutableSharedFlow<ConnectionEvent>()
-    val connectionEvents: SharedFlow<ConnectionEvent> = _connectionEvents
 
     // События сокета
     private val _messagingEvents = MutableSharedFlow<MessagingEvent>()
@@ -228,7 +224,6 @@ class ChatClient(
                 _connectionState.value = ConnectionState.Connected
                 messageQueueService.startSendMessageQueue()
                 startChatQueueService.startSend()
-                scope.launch { _connectionEvents.emit(ConnectionEvent.Connected) }
                 reconnectManager.resetAttempts()
             }
             it.on(SocketEvents.SERVER_RESPONSE) {args ->
@@ -252,14 +247,12 @@ class ChatClient(
                 } else {
                     manualDisconnect = false
                 }
-                scope.launch { _connectionEvents.emit(ConnectionEvent.Disconnected(args.toList())) }
             }
             it.on(Socket.EVENT_CONNECT_ERROR) {args ->
                 println("SDK#[EVENT_CONNECT_ERROR] >>> ${args.contentToString()}")
                 val err = (args.firstOrNull() as? Throwable)
                     ?: RuntimeException("CONNECT_ERROR: ${args.contentToString()}")
                 _connectionState.value = ConnectionState.Error(err)
-                scope.launch { _connectionEvents.emit(ConnectionEvent.ConnectError(args.toList())) }
                 messageQueueService.disableQueue()
                 startChatQueueService.freeQueue()
                 reconnectManager.triggerReconnect()
@@ -374,6 +367,25 @@ class ChatClient(
     internal fun getChatButtons() = sharedPrefs.getChatButtons()
 
 
+    fun getSavedData(): ChatSavableData {
+        return ChatSavableData(
+            userData = userData,
+            staffData = sharedPrefs.getStaff(),
+            chatButtons = getChatButtons(),
+            messagesQueue = sharedPrefs.getMessagesQueue(),
+            startChatDatta = getStartChatMessage()
+        )
+    }
+
+    fun setSavedData(data: ChatSavableData) {
+        sharedPrefs.saveUser(data.userData)
+        sharedPrefs.saveStaff(data.staffData)
+        sharedPrefs.saveChatButtons(data.chatButtons)
+        sharedPrefs.setMessagesQueue(data.messagesQueue)
+        sharedPrefs.setStartChatMessage(data.startChatDatta)
+    }
+
+
     private suspend fun onServerResponse(json: JSONObject) {
         val action = json.get("action").toString()
         when (action) {
@@ -381,25 +393,11 @@ class ChatClient(
                 val initWidget = InitResponse.fromJson(json)
                 _messagingEvents.emit(MessagingEvent.Server.InitWidget(initWidget))
 
-                when (val data = initWidget.data) {
-                    is InitWidgetData.First -> {
-                        userData = data.userData
+                userData = initWidget.data.userData
 
-                        // надо сохранять полученного пользователя
-                        if (chatOptions.saveUserAfterConnection) {
-                            sharedPrefs.saveUser(
-                                data.userData
-                            )
-                        }
-                    }
-                    is InitWidgetData.Progress -> {
-                        // Сохраняем VisitorData
-                        if (chatOptions.saveUserAfterConnection) {
-                            sharedPrefs.saveUser(data.visitorData)
-                        }
-                        userData = data.visitorData
-                    }
-
+                // надо сохранять полученного пользователя
+                if (chatOptions.saveUserAfterConnection) {
+                    sharedPrefs.saveUser(initWidget.data.userData)
                 }
 
             }

@@ -119,7 +119,6 @@ fun ChatView(
                 },
                 onClickSend = { (ChatHDE.clickSendAction ?: ChatHDE.clickSendActionDefault).invoke(it) },
                 onMessageTyping = { ChatHDE.onMessageTyping?.invoke(it) },
-                onClickLoadDocument = { (ChatHDE.clickLoadDocumentAction ?: ChatHDE.clickLoadDocumentActionDefault).invoke() },
                 onClickImage = { vm.saveScroll(); (ChatHDE.clickImageAction ?: ChatHDE.clickImageActionDefault).invoke(it) },
                 onClickFile = { (ChatHDE.clickFileAction ?: ChatHDE.clickFileActionDefault).invoke(it) },
                 onClickChatButton = { (ChatHDE.clickChatButtonAction ?: ChatHDE.clickChatButtonActionDefault).invoke(it) }

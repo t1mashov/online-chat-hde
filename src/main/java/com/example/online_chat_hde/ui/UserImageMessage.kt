@@ -49,7 +49,7 @@ internal fun UserImageMessageView(
 
         val painter = rememberAsyncImagePainter(
             ImageRequest.Builder(LocalContext.current)
-                .data(baseURL + image.preview)
+                .data(baseURL + image.thumb)
                 .crossfade(true)
                 .build()
         )
@@ -156,7 +156,6 @@ internal fun UserImageMessageView(
 internal fun UserImageMessagePreview() {
     UserImageMessageView(
         image = FileData.Image(
-            preview = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150",
             thumb = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150"
         ).apply {
             name = "mountain-landscape.jpg"

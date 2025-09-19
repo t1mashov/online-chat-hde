@@ -224,7 +224,7 @@ internal fun PreviewServerFileMessage() {
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         ServerFileMessageView(
             orientedMessage = OrientedMessage(Message.User(), placeHorizontal = remember { mutableStateOf(true) }) ,
-            file = FileData.Text("", false).apply {
+            file = FileData.Text().apply {
                 name = "hello.txt"
             },
             name = "alex@hde.com",
@@ -234,7 +234,7 @@ internal fun PreviewServerFileMessage() {
         )
         ServerFileMessageView(
             orientedMessage = OrientedMessage(Message.User()),
-            file = FileData.Text("",  false).apply {
+            file = FileData.Text().apply {
                 name = "Ipsum_dolor_sit_conse_ctetur_adipiscing_minimumven_jiam.txt"
             },
             name = "olgerd1450@hde.com",

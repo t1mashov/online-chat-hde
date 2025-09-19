@@ -177,11 +177,11 @@ class ChatViewModel(
                     is MessagingEvent.Server -> when (event) {
                         is MessagingEvent.Server.NewMessage -> {
                             isGlobalLoading.value = false
-                            handleMessage(event.data.data)
+                            handleMessage(event.response.data)
                         }
 
                         is MessagingEvent.Server.PrependMessages -> {
-                            val prependMessage = event.data
+                            val prependMessage = event.response
                             if (prependMessage.data != null) {
                                 for (message in prependMessage.data.messages.reversed()) {
                                     handleMessage(
@@ -196,7 +196,7 @@ class ChatViewModel(
                             isGlobalLoading.value = false
                             ticketStatus.value = TicketOptionsWithStatus(options = getTicketOptions(), status = TicketStatus.CHAT_ACTIVE)
                             _messages.clear()
-                            handleMessage(event.data.data)
+                            handleMessage(event.response.data)
                         }
 
                         is MessagingEvent.Server.TicketCreated -> {
@@ -209,7 +209,7 @@ class ChatViewModel(
 
                         // обработка назначения сотрудника
                         is MessagingEvent.Server.SetStaff -> {
-                            staff.value = event.data.data.staff
+                            staff.value = event.response.data.staff
                         }
 
                         // Обработка инициирующего сообщения
@@ -219,14 +219,14 @@ class ChatViewModel(
                             val disabledTicket = ticketOptions.consentLink==null && !ticketOptions.showEmailField && !ticketOptions.showNameField
                             val status = TicketOptionsWithStatus(
                                 options = ticketOptions,
-                                status = if (event.data.data.ticketForm) TicketStatus.STAFF_OFFLINE
+                                status = if (event.response.data.ticketForm) TicketStatus.STAFF_OFFLINE
                                          else if (client.getStartChatMessage() != null || disabledTicket) TicketStatus.CHAT_ACTIVE
-                                         else if (event.data.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
+                                         else if (event.response.data is InitWidgetData.First) TicketStatus.FIRST_MESSAGE
                                          else TicketStatus.CHAT_ACTIVE
                             )
                             ticketStatus.value = status
 
-                            when (val initWidgetData = event.data.data) {
+                            when (val initWidgetData = event.response.data) {
                                 is InitWidgetData.First -> {
                                     initWidgetData.initialChatButtons?.let {
                                         handleInitMessages(listOf(Message.Server(name = client.chatOptions.botName).apply {

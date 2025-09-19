@@ -33,8 +33,8 @@ class VisitorMessage(
                 files = VisitorFile.fromJsonArray(json.getJSONArray("files"))
             )
         }
-        fun toJsonArrayString(messages: List<VisitorMessage>): String {
-            return """[${messages.joinToString(", ") { it.toJson().toString() }}]"""
+        fun toJsonArray(messages: List<VisitorMessage>): JSONArray {
+            return JSONArray(messages.map { it.toJson() })
         }
     }
 }

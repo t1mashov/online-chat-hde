@@ -181,7 +181,7 @@ internal fun PreviewUserFileMessage() {
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         UserFileMessageView(
             orientedMessage = OrientedMessage(Message.User(), placeHorizontal = remember { mutableStateOf(true) }),
-            file = FileData.Text("", false).apply {
+            file = FileData.Text().apply {
                 name = "hello.txt"
             },
             time = "12:56",
@@ -190,7 +190,7 @@ internal fun PreviewUserFileMessage() {
         )
         UserFileMessageView(
             orientedMessage = OrientedMessage(Message.User()),
-            file = FileData.Text("", false).apply {
+            file = FileData.Text().apply {
                 name = "Ipsum_dolor_sit_conse_ctetur_adip_iscing_minimum_ven_jiam.txt"
             },
             time = "08:31",

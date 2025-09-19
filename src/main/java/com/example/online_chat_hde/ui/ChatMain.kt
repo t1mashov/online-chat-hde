@@ -73,7 +73,6 @@ internal fun ChatMain(
     modifier: Modifier = Modifier,
     onClickClose: () -> Unit = {},
     onClickSend: (String) -> Unit = {},
-    onClickLoadDocument: () -> Unit = {},
     onClickFile: (FileData.Text) -> Unit = {},
     onClickImage: (FileData.Image) -> Unit = {},
     onMessageTyping: (String) -> Unit = {},
@@ -84,7 +83,7 @@ internal fun ChatMain(
     println("SDK[TicketStatus] >>> $ticketStatus")
     when (ticketStatus) {
         TicketStatus.CHAT_ACTIVE -> {
-            ChatPage(viewModel, uiConfig, modifier, onClickClose, onClickSend, onClickLoadDocument, onClickFile, onClickImage, onMessageTyping, onClickChatButton)
+            ChatPage(viewModel, uiConfig, modifier, onClickClose, onClickSend, onClickFile, onClickImage, onMessageTyping, onClickChatButton)
         }
         else -> {
             TicketView(viewModel, uiConfig, viewModel.getTicketOptions(), viewModel.getUserData(), ticketStatus, onClickClose) {
@@ -208,7 +207,6 @@ internal fun ChatBottomPanel(
     viewModel: ChatViewModel,
     uiConfig: ChatUIConfig,
     onClickSend: (String) -> Unit,
-    onClickLoadDocument: () -> Unit,
     onMessageTyping: (String) -> Unit
 ) {
 
@@ -369,7 +367,6 @@ internal fun ChatPage(
     modifier: Modifier = Modifier,
     onClickClose: () -> Unit,
     onClickSend: (String) -> Unit,
-    onClickLoadDocument: () -> Unit,
     onClickFile: (FileData.Text) -> Unit,
     onClickImage: (FileData.Image) -> Unit,
     onMessageTyping: (String) -> Unit,
@@ -538,7 +535,7 @@ internal fun ChatPage(
 
                 // Нижняя панель
                 ChatBottomPanel(
-                    viewModel, uiConfig, onClickSend, onClickLoadDocument, onMessageTyping
+                    viewModel, uiConfig, onClickSend, onMessageTyping
                 )
             }
 

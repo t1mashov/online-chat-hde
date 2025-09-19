@@ -47,11 +47,10 @@ internal fun ImageFullScreen(
     baseURL: String,
     uiConfig: ChatUIConfig
 ) {
-    println("SDK[ImageFullScreen] >>> ${image.name}")
     val ctx = LocalContext.current
 
     val url = remember(image.link, baseURL) {
-        if ((image.preview ?: image.thumb).contains("://")) image.link else baseURL + image.link
+        if (image.thumb.contains("://")) image.link else baseURL + image.link
     }
 
     val painter = rememberAsyncImagePainter(
@@ -88,7 +87,7 @@ internal fun ImageFullScreen(
             }
             is AsyncImagePainter.State.Error -> {
                 Text(
-                    text = "Не удалось загрузить изображение",
+                    text = uiConfig.texts.errorImageLoading,
                     color = Color.White,
                     modifier = Modifier.align(Alignment.Center)
                 )

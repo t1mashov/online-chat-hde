@@ -1,7 +1,5 @@
 package com.example.online_chat_hde.models
 
-import com.example.online_chat_hde.core.ButtonTypes
-import com.example.online_chat_hde.core.Payload
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -26,6 +24,7 @@ sealed class InitWidgetData {
     var ticketForm: Boolean = false
     var rate: Rate? = null
     var initialChatButtons: List<ChatButton>? = null
+    var userData: UserData = UserData(id = "")
 
     companion object {
         fun fromJson(json: JSONObject): InitWidgetData {
@@ -39,19 +38,18 @@ sealed class InitWidgetData {
     }
 
     class Progress(
-        var visitorData: UserData,
         var widgetChat: WidgetChat
     ): InitWidgetData() {
         companion object {
             fun fromJson(json: JSONObject): Progress {
                 return Progress(
-                    visitorData = UserData.fromJson(json.getJSONObject("visitorData")),
                     widgetChat = WidgetChat.fromJson(json.getJSONObject("widgetChat"))
                 ).apply {
                     val rateJson = json.opt("rate")
                     val buttons = json.opt("initialChatButtons")
                     showChat = json.getBoolean("showChat")
                     ticketForm = json.getBoolean("ticketForm")
+                    userData = UserData.fromJson(json.getJSONObject("visitorData"))
                     rate = if (rateJson == JSONObject.NULL) null
                            else Rate.fromJson(rateJson as JSONObject)
                     initialChatButtons = if (buttons == JSONObject.NULL) null
@@ -62,7 +60,6 @@ sealed class InitWidgetData {
     }
 
     class First(
-        var userData: UserData,
         var widgetChat: Boolean,
     ): InitWidgetData() {
         companion object {
@@ -70,12 +67,12 @@ sealed class InitWidgetData {
                 val buttons = if (json.get("initialChatButtons") == JSONObject.NULL) null
                               else ChatButton.fromJsonArray(json.getJSONArray("initialChatButtons"))
                 return First(
-                    userData = UserData.fromJson(json.getJSONObject("visitorData")),
                     widgetChat = false
                 ).apply {
                     val rateJson = json.opt("rate")
                     showChat = json.getBoolean("showChat")
                     ticketForm = json.getBoolean("ticketForm")
+                    userData = UserData.fromJson(json.getJSONObject("visitorData"))
                     rate = if (rateJson == JSONObject.NULL) null
                            else Rate.fromJson(rateJson as JSONObject)
                     initialChatButtons = buttons
@@ -86,25 +83,6 @@ sealed class InitWidgetData {
 }
 
 
-class UserData(
-    var id: String,
-    var name: String = "",
-    var email: String = "",
-) {
-    fun toJsonString(): String = """{"id":"$id", "name":"$name", "email":"$email"}"""
-    companion object {
-        fun fromJson(json: JSONObject): UserData = UserData(
-            id = json.getString("id"),
-            name = json.getString("name"),
-            email = json.getString("email")
-        )
-        fun fromPayloadAuthUser(payload: Payload.Auth) = UserData(
-            id = payload.visitorId,
-            name = payload.visitorName,
-            email = payload.visitorEmail
-        )
-    }
-}
 
 class Rate(
     var maxScore: Int,
@@ -120,34 +98,3 @@ class Rate(
     }
 }
 
-class ChatButton(
-    var text: String,
-    var type: String = ButtonTypes.TEXT,
-    var name: String? = null,
-    var value: String? = null,
-    var hideButtons: Boolean = false,
-) {
-
-    fun toJsonString(): String = """{"type":"$type", "name":"$name", "value":"$value", "text":"$text", "hideButtons":$hideButtons}"""
-
-    companion object {
-        fun fromJson(json: JSONObject): ChatButton{
-            return ChatButton(
-                type = if (json.has("type")) json.getString("type") else ButtonTypes.TEXT,
-                name = if (json.has("name")) json.getString("name") else null,
-                value = if (json.has("value")) json.getString("value") else null,
-                text = json.getString("text"),
-                hideButtons = if (json.has("hideButtons")) json.getBoolean("hideButtons") else false,
-            )
-        }
-
-        fun fromJsonArray(json: JSONArray): List<ChatButton> = (0 until json.length()).map {
-            val item = json.getJSONObject(it)
-            return@map fromJson(item)
-        }
-
-        fun toJsonArrayString(buttons: List<ChatButton>): String {
-            return """[${buttons.map { it.toJsonString() }.joinToString(", ")}]"""
-        }
-    }
-}

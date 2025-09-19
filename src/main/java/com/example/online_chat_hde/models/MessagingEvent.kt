@@ -5,15 +5,15 @@ sealed class MessagingEvent {
     /** Ответы со стороны сервера */
     sealed class Server: MessagingEvent() {
         /** Инициирующее сообщение, содержит информацию о чате, пользователе и др. */
-        data class InitWidget(val data: InitResponse): Server()
+        data class InitWidget(val response: InitResponse): Server()
         /** Новое сообщение пользователя или агента */
-        data class NewMessage(val data: NewMessageResponse): Server()
+        data class NewMessage(val response: NewMessageResponse): Server()
         /** Предыдущие сообщения */
-        data class PrependMessages(val data: PrependMessagesResponse): Server()
+        data class PrependMessages(val response: PrependMessagesResponse): Server()
         /** Агент был назначен (или снят) на чат */
-        data class SetStaff(val data: SetStaffResponse): Server()
+        data class SetStaff(val response: SetStaffResponse): Server()
         /** Был начат новый чат (после ввода данных пользователя в тикете и нажатия кнопки отправки) */
-        data class StartChat(val data: StartChatResponse): Server()
+        data class StartChat(val response: StartChatResponse): Server()
         /** Тикет был создан */
         data object TicketCreated: Server()
     }

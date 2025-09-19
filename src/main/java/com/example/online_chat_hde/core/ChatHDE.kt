@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.online_chat_hde.ChatActivity
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.ChatOptions
+import com.example.online_chat_hde.models.ChatSavableData
 import com.example.online_chat_hde.models.ConnectionEvent
 import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.FileData
@@ -49,11 +50,7 @@ object ChatHDE {
 
     fun chatViewModelFactory(): ViewModelProvider.Factory = ChatViewModelFactory(requireClient())
 
-    /** события сервиса */
-    val connectionEvents: SharedFlow<ConnectionEvent>
-        get() = requireClient().connectionEvents
-
-    /** События сокета */
+    /** События SDK */
     val messagingEvents: SharedFlow<MessagingEvent>
         get() = requireClient().messagingEvents
 
@@ -65,14 +62,11 @@ object ChatHDE {
     internal var onMessageTyping: ((String) -> Unit)? = null
 
     internal var clickSendAction: ((String) -> Unit)? = null
-    internal var clickLoadDocumentAction: (() -> Unit)? = null
     internal var clickFileAction: ((FileData.Text) -> Unit)? = null
     internal var clickImageAction: ((FileData.Image) -> Unit)? = null
     internal var clickChatButtonAction: ((ChatButton) -> Unit)? = null
 
     var clickSendActionDefault: (String) -> Unit = {}
-        internal set
-    var clickLoadDocumentActionDefault: () -> Unit = {}
         internal set
     var clickFileActionDefault: (FileData.Text) -> Unit = {}
         internal set
@@ -84,13 +78,11 @@ object ChatHDE {
 
     fun setClickActions(
         clickSendAction: ((String) -> Unit)? = null,
-        clickLoadDocumentAction: (() -> Unit)? = null,
         clickFileAction: ((FileData.Text) -> Unit)? = null,
         clickImageAction: ((FileData.Image) -> Unit)? = null,
         clickChatButtonAction: ((ChatButton) -> Unit)? = null,
     ) {
         this.clickSendAction = clickSendAction
-        this.clickLoadDocumentAction = clickLoadDocumentAction
         this.clickFileAction = clickFileAction
         this.clickImageAction = clickImageAction
         this.clickChatButtonAction = clickChatButtonAction
@@ -145,6 +137,15 @@ object ChatHDE {
 
     fun disconnect() {
         client?.disconnect()
+    }
+
+
+    fun getSavedData(): ChatSavableData? {
+        return client?.getSavedData()
+    }
+
+    fun setSavedData(data: ChatSavableData) {
+        client?.setSavedData(data)
     }
 
 

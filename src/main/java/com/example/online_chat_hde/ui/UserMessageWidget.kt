@@ -86,16 +86,12 @@ internal fun UserMessageWidgetPreview() {
                     time = "16:45"
                     files = listOf(
                         FileData.Image(
-                            preview = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150",
                             thumb = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150"
                         ).apply {
                             name = "mountain-landscape.jpg"
                             link = "/ru/file/inline_image/278c438bd653f82adfc93249ed059f5481b714db"
                         },
-                        FileData.Text(
-                            preview = false,
-                            thumb = null
-                        ).apply {
+                        FileData.Text().apply {
                             name = "very-important-text.txt"
                             link = "/ru/file/inline_image/278c438bd653f82adfc93249ed059f5481b714db"
                         }

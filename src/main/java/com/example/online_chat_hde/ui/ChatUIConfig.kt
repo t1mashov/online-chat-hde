@@ -183,6 +183,7 @@ data class ChatUITexts(
     var unacceptedConsentError: String,
     var waitForReply: String,
     var uploadError: String,
+    var errorImageLoading: String,
 
     var errors: Map<String, String>,
 
@@ -289,8 +290,9 @@ object ChatUIConfigDefault : ChatUIConfig(
         emptyEmailError = "Укажите Вашу э-почту",
         unacceptedConsentError = "Необходимо согласие",
         invalidEmailError = "Неверный формат э-почты",
-        waitForReply = "Спасибо за Ваше сообщение!\nМы скоро на него ответим!",
+        waitForReply = "Спасибо за Ваше сообщение!\nМы скоро на него  ответим!",
         uploadError = "Не удалось загрузить файл, попробуйте загрузить повторно",
+        errorImageLoading = "Не удалось загрузить изображение",
         errors = mapOf(
             ErrorKeys.FILE_MAX_SIZE to "Превышен максимальный размер загружаемого файла"
         ),

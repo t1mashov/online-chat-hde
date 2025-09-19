@@ -19,6 +19,7 @@ object ActionTypes {
 
 object StorageKeys {
     const val STORAGE_NAME = "chatData"
+
     const val VISITOR_DATA = "visitorData"
     const val CHAT_BUTTONS = "chatButtons"
     const val MESSAGE_QUEUE = "messageQueue"

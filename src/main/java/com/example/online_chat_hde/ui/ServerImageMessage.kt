@@ -48,10 +48,9 @@ internal fun ServerImageMessageView(
             .padding(vertical = uiConfig.dimensions.messageIndent)
     ) {
 
-        val imageLink = image.preview ?: image.thumb
         val painter = rememberAsyncImagePainter(
             ImageRequest.Builder(LocalContext.current)
-                .data( if (imageLink.contains("://")) imageLink else baseURL + imageLink)
+                .data( if (image.thumb.contains("://")) image.thumb else baseURL + image.thumb)
                 .crossfade(true)
                 .build()
         )
@@ -161,7 +160,6 @@ internal fun ServerImageMessageView(
 internal fun ServerImageMessagePreview() {
     ServerImageMessageView(
         image = FileData.Image(
-            preview = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150",
             thumb = "/ru/file/image_thumb/278c438bd653f82adfc93249ed059f5481b714db/size/150"
         ).apply {
             name = "mountain-landscape.jpg"
