@@ -16,6 +16,10 @@ sealed class MessagingEvent {
         data class StartChat(val response: StartChatResponse): Server()
         /** Тикет был создан */
         data object TicketCreated: Server()
+
+        data class RateSuccess(val data: Boolean): Server()
+
+        data object CloseChat: Server()
     }
 
     /** События инициируемые клиентом */
@@ -28,5 +32,7 @@ sealed class MessagingEvent {
         data class VisitorIsTyping(val text: String): User()
         /** Сообщение отправлено но еще не подтверждено сервером */
         data class LoadingMessage(val data: VisitorMessage): User()
+        /** Пользователь оценил чат */
+        data class RateChat(val data: UserRate): User()
     }
 }

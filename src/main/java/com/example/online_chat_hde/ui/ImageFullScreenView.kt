@@ -50,7 +50,7 @@ internal fun ImageFullScreen(
     val ctx = LocalContext.current
 
     val url = remember(image.link, baseURL) {
-        if (image.thumb.contains("://")) image.link else baseURL + image.link
+        if (image.link.contains("://")) image.link else baseURL + image.link
     }
 
     val painter = rememberAsyncImagePainter(

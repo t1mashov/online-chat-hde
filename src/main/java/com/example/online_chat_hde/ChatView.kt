@@ -5,31 +5,56 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.text.TextStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.online_chat_hde.core.ButtonTypes
 import com.example.online_chat_hde.core.ChatHDE
-import com.example.online_chat_hde.core.ChatViewModel
+import com.example.online_chat_hde.viewmodels.ChatViewModel
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.VisitorMessage
-import com.example.online_chat_hde.ui.ChatMain
+import com.example.online_chat_hde.ui.ChatPage
+import com.example.online_chat_hde.ui.ChatRoute
+import com.example.online_chat_hde.ui.ChatScope
+import com.example.online_chat_hde.ui.ChatUIConfig
 import com.example.online_chat_hde.ui.ImageFullScreen
+import com.example.online_chat_hde.ui.Ticket
+import com.example.online_chat_hde.ui.TicketScope
+import com.example.online_chat_hde.viewmodels.TicketViewModel
 import org.json.JSONObject
+
+
+interface ChatUIScope {
+    val uiConfig: ChatUIConfig
+}
+
+
 
 @Composable
 fun ChatView(
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    ticket: @Composable TicketScope.() -> Unit = {
+        Ticket()
+    },
+    chat: @Composable ChatScope.() -> Unit = {
+        ChatPage()
+    }
 ) {
     val ctx = LocalContext.current
 
-    val vm: ChatViewModel = viewModel(factory = ChatHDE.chatViewModelFactory())
-    val chatService = vm.client
+    val chatVM: ChatViewModel = viewModel(factory = ChatHDE.chatViewModelFactory())
+    val ticketVM: TicketViewModel = viewModel(factory = ChatHDE.ticketViewModelFactory())
+    val chatService = chatVM.client
 
     val nav = rememberNavController()
 
@@ -75,7 +100,7 @@ fun ChatView(
 
     // Стандартный обработчик отправки сообщений
     ChatHDE.clickSendActionDefault = {
-        vm.sendMessage(it)
+        chatVM.sendMessage(it)
     }
 
 
@@ -99,9 +124,13 @@ fun ChatView(
         }
     }
 
+    val uiScope = object : ChatUIScope {
+        override val uiConfig: ChatUIConfig = ChatHDE.defaultUi
+    }
+
+
     BackHandler {
         onClose()
-        vm.closeChat()
     }
 
     NavHost(
@@ -109,20 +138,23 @@ fun ChatView(
         startDestination = ChatRoutes.CHAT
     ) {
         composable(ChatRoutes.CHAT) {
-            ChatMain(
-                viewModel = vm,
-                uiConfig = ChatHDE.defaultUi,
-                modifier = Modifier
-                    .fillMaxSize(),
-                onClickClose = {
-                    onClose()
-                },
-                onClickSend = { (ChatHDE.clickSendAction ?: ChatHDE.clickSendActionDefault).invoke(it) },
-                onMessageTyping = { ChatHDE.onMessageTyping?.invoke(it) },
-                onClickImage = { vm.saveScroll(); (ChatHDE.clickImageAction ?: ChatHDE.clickImageActionDefault).invoke(it) },
-                onClickFile = { (ChatHDE.clickFileAction ?: ChatHDE.clickFileActionDefault).invoke(it) },
-                onClickChatButton = { (ChatHDE.clickChatButtonAction ?: ChatHDE.clickChatButtonActionDefault).invoke(it) }
-            )
+            with (uiScope) {
+                ChatRoute(
+                    chatViewModel = chatVM,
+                    ticketViewModel = ticketVM,
+                    onClickClose = {
+                        onClose()
+                    },
+                    onClickSend = { (ChatHDE.clickSendAction ?: ChatHDE.clickSendActionDefault).invoke(it) },
+                    onMessageTyping = { ChatHDE.onMessageTyping?.invoke(it) },
+                    onClickImage = { (ChatHDE.clickImageAction ?: ChatHDE.clickImageActionDefault).invoke(it) },
+                    onClickFile = { (ChatHDE.clickFileAction ?: ChatHDE.clickFileActionDefault).invoke(it) },
+                    onClickChatButton = { (ChatHDE.clickChatButtonAction ?: ChatHDE.clickChatButtonActionDefault).invoke(it) },
+
+                    ticket = ticket,
+                    chat = chat
+                )
+            }
         }
         composable(ChatRoutes.IMAGE) {
             val json = remember {
@@ -135,7 +167,6 @@ fun ChatView(
             val image = remember(json) { FileData.Image.fromJson(JSONObject(json)) }
 
             BackHandler {
-                vm.restoreScroll()
                 nav.popBackStack()
             }
 

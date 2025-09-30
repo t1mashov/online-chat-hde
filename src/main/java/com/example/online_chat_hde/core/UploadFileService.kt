@@ -24,13 +24,19 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
+
+sealed interface UploadError {
+    data object FileTooLarge : UploadError
+    data object Unknown : UploadError
+}
+
 internal class UploadFileService(
     val service: ChatClient,
     val context: Context
 ) {
 
-    private val _errorFlow = MutableSharedFlow<String>()
-    internal val errorFlow: SharedFlow<String> = _errorFlow
+    private val _errorFlow = MutableSharedFlow<UploadError>()
+    internal val errorFlow: SharedFlow<UploadError> = _errorFlow
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -89,7 +95,7 @@ internal class UploadFileService(
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 scope.launch {
-                    _errorFlow.emit("undefined error")
+                    _errorFlow.emit(UploadError.Unknown)
                 }
             }
 
@@ -98,7 +104,12 @@ internal class UploadFileService(
                     val serverResponse = JSONObject(response.body!!.string())
                     if (serverResponse.has("error")) {
                         scope.launch {
-                            _errorFlow.emit(serverResponse.getString("error"))
+                            _errorFlow.emit(
+                                when (serverResponse.getString("error")) {
+                                    ErrorKeys.FILE_MAX_SIZE -> UploadError.FileTooLarge
+                                    else -> UploadError.Unknown
+                                }
+                            )
                         }
                         return
                     }

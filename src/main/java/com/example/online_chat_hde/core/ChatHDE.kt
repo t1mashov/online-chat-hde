@@ -8,7 +8,6 @@ import com.example.online_chat_hde.ChatActivity
 import com.example.online_chat_hde.models.ChatButton
 import com.example.online_chat_hde.models.ChatOptions
 import com.example.online_chat_hde.models.ChatSavableData
-import com.example.online_chat_hde.models.ConnectionEvent
 import com.example.online_chat_hde.models.ConnectionState
 import com.example.online_chat_hde.models.FileData
 import com.example.online_chat_hde.models.Message
@@ -18,6 +17,8 @@ import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.ui.ChatUIConfig
 import com.example.online_chat_hde.ui.ChatUIConfigDefault
+import com.example.online_chat_hde.viewmodels.ChatViewModelFactory
+import com.example.online_chat_hde.viewmodels.TicketViewModelFactory
 import kotlinx.coroutines.flow.SharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -49,6 +50,7 @@ object ChatHDE {
         requireNotNull(client) { "Call ChatSdk.init(...) first" }
 
     fun chatViewModelFactory(): ViewModelProvider.Factory = ChatViewModelFactory(requireClient())
+    fun ticketViewModelFactory(): ViewModelProvider.Factory = TicketViewModelFactory(requireClient())
 
     /** События SDK */
     val messagingEvents: SharedFlow<MessagingEvent>

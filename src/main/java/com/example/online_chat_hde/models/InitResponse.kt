@@ -84,17 +84,3 @@ sealed class InitWidgetData {
 
 
 
-class Rate(
-    var maxScore: Int,
-    var template: String,
-    var customRate: Boolean,
-) {
-    companion object {
-        fun fromJson(json: JSONObject): Rate = Rate(
-            maxScore = json.getInt("maxScore"),
-            template = json.getString("template"),
-            customRate = json.getBoolean("customRate")
-        )
-    }
-}
-

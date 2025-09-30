@@ -51,7 +51,8 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FilePickerBottom(
-    expanded: MutableState<Boolean>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     uiConfig: ChatUIConfig,
     onFileLoaded: (Uri, Long) -> Unit = {_, _ ->},
 ) {
@@ -108,7 +109,7 @@ internal fun FilePickerBottom(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri -> // Файл
             println("SDK[FILE uri] >>> $uri")
-            expanded.value = false
+            onExpandedChange(false)
             uri?.let {
                 onFileLoaded(it, ctx.getFileSize(it))
             }
@@ -197,13 +198,10 @@ internal fun FilePickerBottom(
 
 
 
-    if (expanded.value) {
-
-//        val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-//        val bottom = rememberNavBarBottomInsetNoE2E()
+    if (expanded) {
 
         ModalBottomSheet(
-            onDismissRequest = {expanded.value = false},
+            onDismissRequest = {onExpandedChange(false)},
             dragHandle = { BottomSheetDefaults.DragHandle() },
             containerColor = uiConfig.colors.background
         ) {
@@ -220,14 +218,14 @@ internal fun FilePickerBottom(
                     launchWithPermissions {
                         launchTakePhoto()
                     }
-                    expanded.value = false
+                    onExpandedChange(false)
                 }
 
                 FilePickerMenuItem(R.drawable.camera, "Видео", uiConfig) {
                     launchWithPermissions {
                         launchCaptureVideo()
                     }
-                    expanded.value = false
+                    onExpandedChange(false)
                 }
 
                 FilePickerMenuItem(R.drawable.folder, "Файлы", uiConfig) {

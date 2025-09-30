@@ -6,6 +6,7 @@ object SocketEvents {
     const val VISITOR_IS_TYPING = "visitor-is-typing"
     const val LOAD_TICKET = "load-ticket"
     const val START_VISITOR_CHAT = "start-visitor-chat"
+    const val RATE_CHAT = "rate-chat"
 }
 
 object ActionTypes {
@@ -15,6 +16,9 @@ object ActionTypes {
     const val SET_STAFF = "widget/setStaff"
     const val TICKET_CREATED = "widget/ticketCreated"
     const val START_CHAT = "widget/startChat"
+    const val RATE_SUCCESS = "widget/rateSuccess"
+    const val STAFF_IS_TYPING = "widget/staffIsTyping"
+    const val CLOSE_CHAT = "widget/closeChat"
 }
 
 object StorageKeys {
@@ -31,6 +35,18 @@ object ButtonTypes {
     const val TEXT = "text"
     const val URL = "href"
     const val HASH = "hash"
+}
+
+object RateTemplates {
+    const val THUMBS = "thumbs"
+    const val SMILES2 = "smiles2"
+
+    const val SMILES3 = "smiles3"
+
+    const val HEARTS = "hearts"
+    const val SMILES = "smiles"
+    const val NUMBERS = "numbers"
+    const val STARS = "stars"
 }
 
 object DateKeys {

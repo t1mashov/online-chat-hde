@@ -11,12 +11,14 @@ import com.example.online_chat_hde.models.Message
 import com.example.online_chat_hde.models.MessagingEvent
 import com.example.online_chat_hde.models.NewMessageResponse
 import com.example.online_chat_hde.models.PrependMessagesResponse
+import com.example.online_chat_hde.models.RateResponse
 import com.example.online_chat_hde.models.SetStaffResponse
 import com.example.online_chat_hde.models.StartVisitorChatData
 import com.example.online_chat_hde.models.UserData
 import com.example.online_chat_hde.models.VisitorMessage
 import com.example.online_chat_hde.models.StartChatResponse
 import com.example.online_chat_hde.models.TicketOptions
+import com.example.online_chat_hde.models.UserRate
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import io.socket.client.IO
@@ -60,7 +62,7 @@ class ChatClient(
     private val reconnectManager = ReconnectManager(this)
 
     // Ошибки при загрузке файла
-    val errorEvents: SharedFlow<String>
+    val errorEvents: SharedFlow<UploadError>
         get() = uploadFileService.errorFlow
 
 
@@ -335,6 +337,13 @@ class ChatClient(
         messageQueueService.startSendMessageQueue()
     }
 
+    fun rateChat(rate: UserRate) {
+        socket?.emit(SocketEvents.RATE_CHAT, rate.toJson())
+        scope.launch {
+            _messagingEvents.emit(MessagingEvent.User.RateChat(rate))
+        }
+    }
+
 
 
     private fun defuseSocket() {
@@ -458,6 +467,13 @@ class ChatClient(
                 sharedPrefs.setStartChatMessage(null)
                 startChatQueueService.freeQueue()
                 _messagingEvents.emit(MessagingEvent.Server.TicketCreated)
+            }
+            ActionTypes.RATE_SUCCESS -> {
+                val rate = RateResponse.fromJson(json)
+                _messagingEvents.emit(MessagingEvent.Server.RateSuccess(rate.data))
+            }
+            ActionTypes.CLOSE_CHAT -> {
+                _messagingEvents.emit(MessagingEvent.Server.CloseChat)
             }
         }
     }

@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.online_chat_hde.R
 import com.example.online_chat_hde.core.DateKeys
-import com.example.online_chat_hde.core.ErrorKeys
 
 open class ChatUIConfig(
     var colors: ChatUIColors,
@@ -25,6 +24,7 @@ data class ChatUIMedia(
     var ticketLogo: Int,
     var ticketNameLogo: Int,
     var ticketEmailLogo: Int,
+    var rateLogo: Int
 )
 
 data class ChatUIColors(
@@ -32,6 +32,8 @@ data class ChatUIColors(
     var loadingBackground: Color,
     var topPanelBackground: Color,
     var bottomPanelBackground: Color,
+    var inputFieldBackground: Color,
+    var inputFieldWithErrorBackground: Color,
     var topPanelText: Color,
     var closeChatButtonBackground: Color,
     var closeChatButtonIcon: Color,
@@ -176,16 +178,18 @@ data class ChatUITexts(
     var ticketPolicy: String,
     var ticketPolicyLink: String,
     var ticketSend: String,
-    var emptyContentError: String,
-    var emptyNameError: String,
-    var emptyEmailError: String,
-    var invalidEmailError: String,
-    var unacceptedConsentError: String,
+    var errorEmptyContent: String,
+    var errorEmptyName: String,
+    var errorEmptyEmail: String,
+    var errorInvalidEmail: String,
+    var errorUnacceptedConsent: String,
     var waitForReply: String,
-    var uploadError: String,
+    var errorUpload: String,
     var errorImageLoading: String,
-
-    var errors: Map<String, String>,
+    var errorFileTooLarge: String,
+    val rateChat: String,
+    val leaveComment: String,
+    val leaveFeedback: String,
 
     var months: Map<String, String>
 )
@@ -195,6 +199,8 @@ object ChatUIConfigDefault : ChatUIConfig(
     colors = ChatUIColors(
         background = Color(0xFFEEEEEE),
         topPanelBackground = Color(0xFF226C78),
+        inputFieldBackground = Color(0xFFEEEEEE),
+        inputFieldWithErrorBackground = Color(0xFFEFDEDE),
         topPanelText = Color(0xFFFFFFFF),
         closeChatButtonBackground = Color(0xFF13424B),
         closeChatButtonIcon = Color(0xFFDAE3E5),
@@ -285,17 +291,19 @@ object ChatUIConfigDefault : ChatUIConfig(
         ticketPolicy = "Согласие на обработку перс. данных",
         ticketPolicyLink = "(Ссылка)",
         ticketSend = "Отправить",
-        emptyContentError = "Введите Ваш вопрос",
-        emptyNameError = "Укажите Ваше имя",
-        emptyEmailError = "Укажите Вашу э-почту",
-        unacceptedConsentError = "Необходимо согласие",
-        invalidEmailError = "Неверный формат э-почты",
+        rateChat = "Пожалуйста, оцените качество сервиса",
+        errorEmptyContent = "Введите Ваш вопрос",
+        errorEmptyName = "Укажите Ваше имя",
+        errorEmptyEmail = "Укажите Вашу э-почту",
+        errorUnacceptedConsent = "Необходимо согласие",
+        errorInvalidEmail = "Неверный формат э-почты",
         waitForReply = "Спасибо за Ваше сообщение!\nМы скоро на него  ответим!",
-        uploadError = "Не удалось загрузить файл, попробуйте загрузить повторно",
+        errorUpload = "Не удалось загрузить файл, попробуйте загрузить повторно",
         errorImageLoading = "Не удалось загрузить изображение",
-        errors = mapOf(
-            ErrorKeys.FILE_MAX_SIZE to "Превышен максимальный размер загружаемого файла"
-        ),
+        errorFileTooLarge = "Максимальный размер загружаемого файла не должен превышать 20 Мб",
+        leaveComment = "Оставьте свой комментарий",
+        leaveFeedback = "Отправить отзыв",
+
         months = mapOf(
             DateKeys.TODAY to "Сегодня",
 
@@ -333,6 +341,7 @@ object ChatUIConfigDefault : ChatUIConfig(
         closeChatLogo = R.drawable.close,
         ticketLogo = R.drawable.message,
         ticketNameLogo = R.drawable.name,
-        ticketEmailLogo = R.drawable.email
+        ticketEmailLogo = R.drawable.email,
+        rateLogo = R.drawable.email
     )
 )

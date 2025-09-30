@@ -4,5 +4,5 @@ data class ChatOptions(
     val welcomeMessage: String,
     val botName: String,
     val saveUserAfterConnection: Boolean = true,
-    val maxUploadFileSizeMB: Int = 20
+    val maxUploadFileSizeMB: Int = 20,
 )

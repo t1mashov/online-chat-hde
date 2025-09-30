@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.example.online_chat_hde.core.ChatHDE
-import com.example.online_chat_hde.core.ChatViewModel
-import com.example.online_chat_hde.core.ChatViewModelFactory
+import com.example.online_chat_hde.viewmodels.ChatViewModel
+import com.example.online_chat_hde.viewmodels.ChatViewModelFactory
 
 
 private fun styleFor(color: Int): SystemBarStyle {
@@ -59,9 +59,9 @@ class ChatActivity : ComponentActivity() {
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    ChatView {
-                        finish()
-                    }
+                    ChatView (
+                        onClose = { finish() }
+                    )
                 }
             }
 
